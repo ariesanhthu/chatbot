@@ -4,15 +4,9 @@ import { useState } from "react";
 import { Chat } from "../components/Chat";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-// import { Input } from "@/components/ui/input";
-// import { Button } from "@/components/ui/button";
-// import { Send } from "lucide-react";
 import { BlockMessages } from "../components/Block-messages";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
+import { Message } from "@/lib/interface";
+import { date } from "zod";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -22,7 +16,7 @@ export default function ChatPage() {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const newMessages: Message[] = [...messages, { role: "user", content: input }];
+    const newMessages: Message[] = [...messages, { id: "1", role: "user", content: input, timestamp: date()._type }];
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
@@ -55,10 +49,10 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 h-[calc(100vh-2rem)] mt-20">
-      <Card className="flex flex-col h-full border-2">
+    <div className="container mx-auto p-4 h-[calc(100vh-2rem)]">
+      <Card className="flex flex-col h-full border-2 bg-slate-950 shadow-lg max-w-4xl mx-auto">
 
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 p-4 overflow-y-auto">
           <div className="space-y-4">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">

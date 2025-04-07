@@ -23,18 +23,13 @@ const registerSchema = z
   .object({
     fullName: z.string().min(2, "Họ tên phải có ít nhất 2 ký tự"),
     email: z.string().email("Email không hợp lệ"),
-    username: z
-      .string()
-      .min(3, "Username phải có ít nhất 3 ký tự")
-      .regex(/^[a-zA-Z0-9_]+$/, "Username chỉ được chứa chữ cái, số và dấu gạch dưới"),
     password: z
       .string()
       .min(8, "Mật khẩu phải có ít nhất 8 ký tự")
       .regex(/[A-Z]/, "Mật khẩu phải chứa ít nhất 1 chữ hoa")
       .regex(/[a-z]/, "Mật khẩu phải chứa ít nhất 1 chữ thường")
       .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất 1 số"),
-    confirmPassword: z.string(),
-    phone: z.string().optional(),
+    confirmPassword: z.string()
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Mật khẩu xác nhận không khớp",
@@ -45,34 +40,102 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: "",
       email: "",
-      username: "",
       password: "",
       confirmPassword: "",
-      phone: "",
     },
   });
 
+  // async function onSubmit(data: RegisterValues) {
+  //   setIsLoading(true);
+  //   try {
+  //     // Call the API endpoint for registration
+  //     const response = await fetch("/api/auth/register", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         email: data.email,
+  //         password: data.password,
+  //         name: data.fullName,
+  //         // Optionally, include additional fields if your API supports them
+  //         // username: data.username,
+  //         // phone: data.phone,
+  //       }),
+  //     });
+  //     const result = await response.json();
+
+  //     if (!response.ok) {
+  //       toast.error(result.error || "Đăng ký thất bại. Vui lòng thử lại.");
+  //       return;
+  //     }
+
+  //     toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác nhận.");
+  //     router.push("/auth/login");
+  //   } catch (error: any) {
+  //     toast.error("Đăng ký thất bại. Vui lòng thử lại.");
+  //     console.error("Registration error:", error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // }
   async function onSubmit(data: RegisterValues) {
     setIsLoading(true);
+    console.log("register clicked!");
     try {
-      // TODO: Implement actual registration logic here
-      console.log(data);
-      toast.success("Đăng ký thành công!");
-      router.push("/auth/login");
-    } catch (error) {
-      toast.error("Đăng ký thất bại. Vui lòng thử lại.");
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          name: data.fullName,
+          // username: data.username,
+          // phone: data.phone === "" ? null : data.phone,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast.error(result.error || "Registration failed");
+      } else {
+        
+        await toast.success("Registration successful! Please check your email.");
+        
+        // ĐĂNG NHẬP SAU KHI ĐĂNG KÝ
+        const loginRes = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+          }),
+        });
+  
+        const loginResult = await loginRes.json();
+  
+        if (!loginRes.ok) {
+          toast.error(loginResult.error || "Đăng nhập thất bại");
+          router.push("/login"); // fallback
+        } else {
+          toast.success("Đăng nhập thành công!");
+          router.push("/");
+        }
+      }
+    } catch (error: any) {
+      toast.error("Registration failed. Please try again.");
+      console.error("Registration error:", error);
     } finally {
       setIsLoading(false);
     }
   }
-
+  
   return (
     <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
@@ -140,7 +203,7 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="username"
                 render={({ field }) => (
@@ -152,7 +215,7 @@ export default function RegisterPage() {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
               <FormField
                 control={form.control}
                 name="password"
@@ -179,7 +242,7 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
@@ -191,7 +254,7 @@ export default function RegisterPage() {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Đăng ký

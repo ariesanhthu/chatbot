@@ -1,84 +1,207 @@
+// "use client";
+
+// import { useState, useEffect } from "react";
+// import Link from "next/link";
+// import { useTheme } from "next-themes";
+// import { Button } from "@/components/ui/button";
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuTrigger,
+// } from "@/components/ui/dropdown-menu";
+// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// import {
+//   Menu,
+//   Sun,
+//   Moon,
+//   Bell,
+//   Settings,
+//   LogOut,
+// } from "lucide-react";
+
+// interface NavbarProps {
+//   onMenuClick: () => void;
+// }
+
+// export function Navbar({ onMenuClick }: NavbarProps) {
+//   const [mounted, setMounted] = useState(false);
+//   const { theme, setTheme } = useTheme();
+
+//   useEffect(() => {
+//     setMounted(true);
+//   }, []);
+
+//   if (!mounted) {
+//     return null;
+//   }
+
+//   return (
+//     <nav className="fixed top-0 left-0 right-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+//       <div className="flex h-full items-center justify-between px-4">
+//         <div className="flex items-center gap-4">
+//           <Button variant="ghost" size="icon" onClick={onMenuClick}>
+//             <Menu className="h-5 w-5" />
+//           </Button>
+//           <Link href="/dashboard" className="font-semibold">
+//             Hệ thống quản lý học sinh
+//           </Link>
+//         </div>
+
+//         <div className="flex items-center gap-2">
+//           <Button variant="ghost" size="icon">
+//             <Bell className="h-5 w-5" />
+//           </Button>
+
+//           <Button
+//             variant="ghost"
+//             size="icon"
+//             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+//           >
+//             {theme === "dark" ? (
+//               <Sun className="h-5 w-5" />
+//             ) : (
+//               <Moon className="h-5 w-5" />
+//             )}
+//           </Button>
+
+//           <DropdownMenu>
+//             <DropdownMenuTrigger asChild>
+//               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+//                 <Avatar className="h-8 w-8">
+//                   <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+//                   <AvatarFallback>SC</AvatarFallback>
+//                 </Avatar>
+//               </Button>
+//             </DropdownMenuTrigger>
+//             <DropdownMenuContent align="end">
+//               <DropdownMenuItem>
+//                 <Settings className="mr-2 h-4 w-4" />
+//                 Cài đặt
+//               </DropdownMenuItem>
+//               <DropdownMenuItem className="text-destructive">
+//                 <LogOut className="mr-2 h-4 w-4" />
+//                 Đăng xuất
+//               </DropdownMenuItem>
+//             </DropdownMenuContent>
+//           </DropdownMenu>
+//         </div>
+//       </div>
+//     </nav>
+//   );
+// }
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Avatar } from "./Avatar";
-import { ThemeToggle } from "./ThemeToggle";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Menu, Sun, Moon, Bell, Settings, LogOut } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-interface User {
-  name: string;
-  role: "Admin" | "Teacher" | "Student";
+interface NavbarProps {
+  onMenuClick: () => void;
 }
 
-const Navbar = () => {
-  const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
+export function Navbar({ onMenuClick }: NavbarProps) {
+  const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const { theme, setTheme } = useTheme();
+  const router = useRouter();
 
-  // Giả lập API lấy thông tin user
   useEffect(() => {
-    // Fetch user từ backend hoặc local storage (cần thay thế bằng API thật)
-    setTimeout(() => {
-      setUser({
-        name: "Nguyễn Văn A",
-        role: "Teacher",
-      });
-    }, 1000);
+    setMounted(true);
+    checkAuth();
   }, []);
 
+  const checkAuth = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    setIsLoggedIn(!user);
+    setUser(user);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  if (!mounted) {
+    return null;
+  }
+
   return (
-    <nav className="w-full flex justify-between items-center px-6 py-4 dark:bg-gray-900 shadow-md fixed top-0 z-50">
-      {/* Logo */}
-      <Link href="/" className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-        AI Chatbot
-      </Link>
-
-      {/* Menu điều hướng */}
-      <div className="hidden md:flex gap-6">
-        <Link href="/" className={`hover:text-blue-500 ${pathname === "/" ? "text-blue-500 font-semibold" : "text-gray-700 dark:text-gray-300"}`}>
-          Trang chủ
-        </Link>
-        {user?.role === "Teacher" && (
-          <Link href="/dashboard" className={`hover:text-blue-500 ${pathname === "/teacher-dashboard" ? "text-blue-500 font-semibold" : "text-gray-700 dark:text-gray-300"}`}>
-            Dashboard
-          </Link>
-        )}
-        <Link href="/chat" className={`hover:text-blue-500 ${pathname === "/chat" ? "text-blue-500 font-semibold" : "text-gray-700 dark:text-gray-300"}`}>
-          Trò chuyện
-        </Link>
-      </div>
-
-      {/* Avatar + Menu dropdown */}
-      <div className="flex items-center gap-4">
-        <ThemeToggle />
-        {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Avatar name={user.name} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
-              <DropdownMenuItem disabled>{user.name}</DropdownMenuItem>
-              <DropdownMenuItem className="text-gray-500" disabled>
-                {user.role}
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/profile">Hồ sơ</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/logout">Đăng xuất</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button asChild>
-            <Link href="/login">Đăng nhập</Link>
+    <nav className="fixed top-0 left-0 right-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+      <div className="flex h-full items-center justify-between px-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={onMenuClick}>
+            <Menu className="h-5 w-5" />
           </Button>
-        )}
+          <Link href="/dashboard" className="font-semibold">
+            Hệ thống quản lý học sinh
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
+
+          {isLoggedIn ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage 
+                      src={user?.user_metadata?.avatar_url || "https://github.com/shadcn.png"}
+                      alt={user?.email || "User"}
+                    />
+                    <AvatarFallback>
+                      {user?.email?.slice(0, 2).toUpperCase() || "US"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Cài đặt
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Đăng xuất
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="outline" asChild>
+              <Link href="/login">Đăng nhập</Link>
+            </Button>
+          )}
+        </div>
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

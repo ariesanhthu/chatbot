@@ -42,9 +42,27 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       // TODO: Implement actual login logic here
+      const loginRes = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
       console.log(data);
-      toast.success("Đăng nhập thành công!");
-      router.push("/dashboard");
+      const loginResult = await loginRes.json();
+      
+      if (!loginRes.ok) {
+        toast.error(loginResult.error || "Đăng nhập thất bại");
+        router.push("/login"); // fallback
+      } else {
+        toast.success("Đăng nhập thành công!");
+        router.push("/");
+      }
     } catch (error) {
       toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
     } finally {
@@ -134,7 +152,7 @@ export default function LoginPage() {
               Quên mật khẩu?
             </Link>
             <Link
-              href="/auth/register"
+              href="/register"
               className="text-muted-foreground hover:text-primary underline underline-offset-4"
             >
               Chưa có tài khoản? Đăng ký ngay
