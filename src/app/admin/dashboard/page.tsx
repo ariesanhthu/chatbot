@@ -84,7 +84,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-8 p-20">
+    <div className="container mx-auto py-8 space-y-8 p-20 mt-10">
       <div className="flex justify-between items-center">
         <h1 className="text-4xl font-bold">Bảng điều khiển giáo viên</h1>
         <div className="flex items-center space-x-2">

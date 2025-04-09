@@ -2,7 +2,6 @@
 import { ChatSidebar } from "../components/ChatSidebar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { Navbar } from "../components/Navbar";
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -13,9 +12,8 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="flex h-screen overflow-hidden relative">
-       <Navbar onMenuClick={toggleSidebar} />
-      <ChatSidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
-      <main className="flex-1 p-6 transition-all duration-300 ease-in-out">{children}</main>
+      {/* <ChatSidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} /> */}
+      <main className="flex-1 p-6 transition-all duration-300 ease-in-out mt-10">{children}</main>
     </div>
   );
 }

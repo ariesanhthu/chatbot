@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,186 +28,15 @@ import {
   ChevronLast,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import useSWR from 'swr';
+import { toast } from "sonner";
+import { getUserId } from "@/lib/auth";
+import  ChatItem, {Chat} from "./chat/ChatItem";
+import ChatGroup, {ChatGroupType} from "./chat/ChatGroup";
+import { createNewChat, deleteChat, addChatToGroup } from "@/app/services/chatService";
 
-interface Chat {
-  id: string;
-  title: string;
-  preview?: string;
-  lastActive: Date;
-}
-
-interface ChatGroup {
-  id: string;
-  name: string;
-  chats: Chat[];
-}
-
-// Mock data for demonstration
-const mockChats: Chat[] = Array.from({ length: 10 }, (_, i) => ({
-  id: `chat-${i}`,
-  title: `Chat ${i + 1}`,
-  preview: i % 2 === 0 ? `This is a preview of chat ${i + 1}...` : undefined,
-  lastActive: new Date(Date.now() - Math.random() * 10000000000),
-}));
-
-const mockGroups: ChatGroup[] = [
-  {
-    id: "group-1",
-    name: "Work",
-    chats: mockChats.slice(0, 3),
-  },
-  {
-    id: "group-2",
-    name: "Personal",
-    chats: mockChats.slice(3, 6),
-  },
-];
-
-interface ChatItemProps {
-  chat: Chat;
-  isSelected: boolean;
-  isCollapsed: boolean;
-  onClick: () => void;
-  onDelete: () => void;
-  onAddToGroup: () => void;
-}
-
-const ChatItem = ({
-  chat,
-  isSelected,
-  isCollapsed,
-  onClick,
-  onDelete,
-  onAddToGroup,
-}: ChatItemProps) => {
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between p-3 cursor-pointer rounded-md transition-colors",
-        isSelected ? "bg-primary/10" : "hover:bg-muted/50"
-      )}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <MessageSquare className="h-5 w-5 text-muted-foreground shrink-0" />
-        {!isCollapsed && (
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium truncate">{chat.title}</h3>
-            {chat.preview && (
-              <p className="text-sm text-muted-foreground truncate">
-                {chat.preview}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-      {!isCollapsed && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToGroup();
-              }}
-            >
-              <FolderPlus className="mr-2 h-4 w-4" />
-              Add to group
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              Delete chat
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
-  );
-};
-
-interface ChatGroupProps {
-  group: ChatGroup;
-  selectedChat: string | null;
-  isCollapsed: boolean;
-  onChatClick: (chatId: string) => void;
-  onDeleteChat: (chatId: string) => void;
-  onAddChatToGroup: (chatId: string) => void;
-}
-
-const ChatGroup = ({
-  group,
-  selectedChat,
-  isCollapsed,
-  onChatClick,
-  onDeleteChat,
-  onAddChatToGroup,
-}: ChatGroupProps) => {
-  const [isOpen, setIsOpen] = useState(true);
-
-  if (isCollapsed) {
-    return (
-      <div className="py-2">
-        {group.chats.map((chat) => (
-          <ChatItem
-            key={chat.id}
-            chat={chat}
-            isSelected={selectedChat === chat.id}
-            isCollapsed={isCollapsed}
-            onClick={() => onChatClick(chat.id)}
-            onDelete={() => onDeleteChat(chat.id)}
-            onAddToGroup={() => onAddChatToGroup(chat.id)}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger className="flex items-center w-full p-2 hover:bg-muted/50 rounded-md">
-        {isOpen ? (
-          <ChevronDown className="h-4 w-4 mr-2" />
-        ) : (
-          <ChevronRight className="h-4 w-4 mr-2" />
-        )}
-        <span className="font-medium">{group.name}</span>
-        <span className="ml-auto text-muted-foreground text-sm">
-          {group.chats.length}
-        </span>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="pl-4 space-y-1">
-          {group.chats.map((chat) => (
-            <ChatItem
-              key={chat.id}
-              chat={chat}
-              isSelected={selectedChat === chat.id}
-              isCollapsed={isCollapsed}
-              onClick={() => onChatClick(chat.id)}
-              onDelete={() => onDeleteChat(chat.id)}
-              onAddToGroup={() => onAddChatToGroup(chat.id)}
-            />
-          ))}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
+// Fetcher function cho useSWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 interface ChatSidebarProps {
   isCollapsed: boolean;
@@ -216,46 +45,108 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const [ungroupedChats] = useState<Chat[]>(
-    mockChats.filter(
-      (chat) => !mockGroups.some((group) => group.chats.includes(chat))
-    )
-  );
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  // Fetch chat groups data using useSWR
+  const { data, error, isLoading, mutate } = useSWR('/api/chatgroups', fetcher);
+  
+  // Extract chat groups and ungrouped chats from the data
+  const chatGroups = data?.data || [];
+  const ungroupedChats = chatGroups
+    .flatMap((group: ChatGroupType) => group.conversations)
+    .filter((chat: Chat) => !chat.group_id);
+
+  // Lấy thông tin người dùng từ Supabase
+  useEffect(() => {
+    const fetchUser = async () => {
+      const id = await getUserId();
+      setUserId(id);
+    };
+    
+    fetchUser();
+  }, []);
 
   const handleChatClick = useCallback((chatId: string) => {
     setSelectedChat(chatId);
   }, []);
 
-  const handleDeleteChat = useCallback((chatId: string) => {
-    console.log("Delete chat:", chatId);
-    // Implement delete logic here
-  }, []);
+  const handleDeleteChat = useCallback(async (chatId: string) => {
+    const result = await deleteChat(chatId);
+    
+    if (result.success) {
+      toast.success('Đã xóa cuộc trò chuyện thành công');
+      mutate();
+    } else {
+      toast.error(result.error || 'Không thể xóa cuộc trò chuyện');
+    }
+  }, [mutate]);
 
-  const handleAddToGroup = useCallback((chatId: string) => {
-    console.log("Add to group:", chatId);
-    // Implement group addition logic here
-  }, []);
+  const handleAddToGroup = useCallback(async (chatId: string) => {
+    // Trong thực tế, bạn sẽ hiển thị một modal để chọn nhóm
+    // Ở đây, tôi sẽ sử dụng nhóm đầu tiên làm ví dụ
+    if (chatGroups.length > 0) {
+      const groupId = chatGroups[0].id;
+      const result = await addChatToGroup(chatId, groupId);
+      
+      if (result.success) {
+        toast.success('Đã thêm cuộc trò chuyện vào nhóm thành công');
+        mutate();
+      } else {
+        toast.error(result.error || 'Không thể thêm cuộc trò chuyện vào nhóm');
+      }
+    } else {
+      toast.error('Không có nhóm nào để thêm vào');
+    }
+  }, [chatGroups, mutate]);
 
   const handleCreateGroup = useCallback(() => {
     console.log("Create new group");
     // Implement group creation logic here
   }, []);
 
+  const handleCreateNewChat = useCallback(async () => {
+    try {
+      if (!userId) {
+        toast.error("Bạn cần đăng nhập để tạo cuộc trò chuyện");
+        return;
+      }
+      
+      setIsCreatingChat(true);
+      
+      // Tạo tiêu đề mặc định cho chat mới
+      const title = `New Chat ${new Date().toLocaleTimeString()}`;
+      
+      const result = await createNewChat(title);
+      
+      if (result.success) {
+        toast.success('Đã tạo cuộc trò chuyện thành công');
+        mutate();
+        
+        // Chọn chat mới tạo
+        if (result.data && result.data[0]) {
+          setSelectedChat(result.data[0].id);
+        }
+      } else {
+        toast.error(result.error || 'Không thể tạo cuộc trò chuyện');
+      }
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      toast.error('Đã xảy ra lỗi khi tạo cuộc trò chuyện');
+    } finally {
+      setIsCreatingChat(false);
+    }
+  }, [mutate, userId]);
+
   return (
     <div
       className={cn(
-        "h-[calc(100vh-4rem)] mt-16 left-0 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sidebar-transition absolute top-0 right-0 z-20 w-72",
+        "h-[calc(100vh-4rem)] mt-20 left-0 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sidebar-transition absolute top-0 right-0 z-20 w-72",
         isCollapsed ? "w-[60px]" : "w-[280px]"
       )}
     >
-      <div className="flex items-center justify-between p-6 border-b">
-        {!isCollapsed && (
-          <Button className="flex-1" onClick={handleCreateGroup}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Group
-          </Button>
-        )}
-        {/* <Button
+      <div className="flex items-center justify-between p-6 border-b mt-20">
+        <Button
           variant="ghost"
           size="icon"
           className="shrink-0"
@@ -266,23 +157,47 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
           ) : (
             <ChevronFirst className="h-4 w-4 hover:bg-red-400" />
           )}
-        </Button> */}
+        </Button>
+        {!isCollapsed && (
+          <div className="flex gap-2 flex-col">
+            <Button 
+              className="flex-1" 
+              onClick={handleCreateNewChat}
+              disabled={isCreatingChat}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {isCreatingChat ? 'Creating...' : 'New Chat'}
+            </Button>
+            <Button className="flex-1" onClick={handleCreateGroup}>
+              <FolderPlus className="mr-2 h-4 w-4" />
+              New Group
+            </Button>
+          </div>
+        )}
       </div>
       <ScrollArea className="h-[calc(100%-73px)]">
         <div className="p-4 space-y-4">
-          {mockGroups.map((group) => (
-            <div key={group.id}>
-              <ChatGroup
-                group={group}
-                selectedChat={selectedChat}
-                isCollapsed={isCollapsed}
-                onChatClick={handleChatClick}
-                onDeleteChat={handleDeleteChat}
-                onAddChatToGroup={handleAddToGroup}
-              />
-              {!isCollapsed && <Separator className="my-4" />}
-            </div>
-          ))}
+          {isLoading ? (
+            <div className="text-center py-4">Loading chat groups...</div>
+          ) : error ? (
+            <div className="text-center py-4 text-red-500">Error loading chat groups</div>
+          ) : chatGroups.length === 0 ? (
+            <div className="text-center py-4">No chat groups found</div>
+          ) : (
+            chatGroups.map((group: ChatGroupType) => (
+              <div key={group.id}>
+                <ChatGroup
+                  group={group}
+                  selectedChat={selectedChat}
+                  isCollapsed={isCollapsed}
+                  onChatClick={handleChatClick}
+                  onDeleteChat={handleDeleteChat}
+                  onAddChatToGroup={handleAddToGroup}
+                />
+                {!isCollapsed && <Separator className="my-4" />}
+              </div>
+            ))
+          )}
           {ungroupedChats.length > 0 && !isCollapsed && (
             <div>
               <div className="flex items-center p-2">
@@ -290,7 +205,7 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
                 <span className="font-medium">Other Chats</span>
               </div>
               <div className="space-y-1">
-                {ungroupedChats.map((chat) => (
+                {ungroupedChats.map((chat: Chat) => (
                   <ChatItem
                     key={chat.id}
                     chat={chat}

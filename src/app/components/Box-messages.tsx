@@ -284,7 +284,7 @@ export function MessageInput({
     : input;
 
   return (
-    <div className="border-t p-4 space-y-4">
+    <div className="border-t p-4 space-y- w-screen">
       {/* File Drop Zone */}
       <div className="border-2 border-dashed rounded-lg p-4 text-center hidden">
         <p className="text-muted-foreground">
