@@ -3,11 +3,10 @@ import { supabase } from '@/lib/supabase';
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
-  ) {
+    context: any
+  ) : Promise<Response> {
     try {
-
-        const {id} = await params;
+      const {id} = context.params as { id: string };
 
       // Delete conversation by id
       const { data, error } = await supabase

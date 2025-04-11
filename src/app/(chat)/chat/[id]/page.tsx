@@ -6,20 +6,17 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { BlockMessages } from "@/app/components/Block-messages";
-import { Message, MessageRole, MessageType } from "@/lib/interface";
+import { MessageProps, MessageRole, MessageType } from "@/lib/interface";
 
 import { useAuth } from "@/context/AuthContext";
 import { BotId } from "@/lib/ExternalData";
+import { useParams } from "next/navigation";
+export default function ChatPage(){
 
-export default function ChatPage({
-    params,
-}: {
-  params: { id: string };
-}) {
+    const { id } = useParams() as { id: string};
+    // const { id } = params; // Lấy chatId từ URL
 
-    const { id } = params; // Lấy chatId từ URL
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageProps[]>([]);
   const [input, setInput] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { userId} = useAuth();
@@ -28,6 +25,7 @@ export default function ChatPage({
     if (!input.trim()) return;
     // Tạo message của người dùng
     const userMessage = {
+        id: crypto.randomUUID(),
         conversationId: id,
         content: input,
         senderId: userId, 
@@ -81,6 +79,7 @@ export default function ChatPage({
       
       // Tạo bot message
       const botMessage = {
+        id:crypto.randomUUID(),
         conversationId: id,
         content: chatData.content,
         senderId: BotId,

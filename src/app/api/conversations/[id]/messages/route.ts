@@ -5,10 +5,16 @@ import { BotId } from '@/lib/ExternalData';
 // POST để tạo message mới
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
-) {
+  context: any
+): Promise<Response> {
   try {
-    const conversationId = params.id;
+    
+    // Await the dynamic parameters before using them
+    // const params = await context.params;
+    // const conversationId = params.id; 
+    const { id: conversationId } = context.params as { id: string };
+
+
     const { message, userId } = await request.json();
     
     // Kiểm tra dữ liệu đầu vào
@@ -45,10 +51,14 @@ export async function POST(
 // POST để lưu phản hồi từ bot
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
-) {
+  context: any
+): Promise<Response> {
   try {
-    const conversationId = params.id;
+    // Await the dynamic parameters before using them
+    // const params = await context.params;
+    // const conversationId = params.id;
+    const { id: conversationId } = context.params as { id: string };
+
     const { botMessage } = await request.json();
     
     // Kiểm tra dữ liệu đầu vào
@@ -85,10 +95,14 @@ export async function PUT(
 // GET để lấy messages của một conversation
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
-) {
+  context: any
+): Promise<Response>
+{
   try {
-    const conversationId = params.id;
+    // Await the dynamic parameters before using them
+    // const params = await context.params;
+    const {id: conversationId} = context.params as { id: string };
+
     
     const { data, error } = await supabase
       .from('messages')

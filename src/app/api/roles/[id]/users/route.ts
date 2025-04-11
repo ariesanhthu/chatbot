@@ -3,12 +3,12 @@ import { supabase } from "@/lib/supabase";
 
 export async function POST(
   request: Request,
-  context: { params: { id: string } }
+  context: any
 ): Promise<Response> {
   try {
     // Await the dynamic parameters before using them
-    const params = await context.params;
-    const roleId = params.id;
+    // const params = await context.params;
+    const {id: roleId} = context.params as { id: string };
 
     if (!roleId) {
       return NextResponse.json(

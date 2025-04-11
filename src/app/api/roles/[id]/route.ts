@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { promises } from 'dns';
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
-) {
+  context: any
+): Promise<Response>  {
   try {
+    // Await the dynamic parameters before using them
+    const { id } = context.params as { id: string };
+
+
     const { name } = await request.json();
 
     if (!name) {
@@ -16,7 +21,7 @@ export async function PUT(
     const { data, error } = await supabase
       .from('roles')
       .update({ name })
-      .eq('id', params.id)
+      .eq('id', id)
       .select();
 
     if (error) {
@@ -33,14 +38,16 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
-) {
+  context: any
+): Promise<Response> {
   try {
+    const { id } = context.params as { id: string };
+
     // Delete role by id
     const { data, error } = await supabase
       .from('roles')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .select();
 
     if (error) {

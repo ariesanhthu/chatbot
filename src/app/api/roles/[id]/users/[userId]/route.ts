@@ -3,13 +3,12 @@ import { supabase } from "@/lib/supabase";
 
 export async function DELETE(
   request: Request,
-  context: { params: { id: string; userId: string } }
+  context: any
 ): Promise<Response> {
   try {
     // Await the dynamic parameters before using them
-    const params = await context.params;
-    const roleId = params.id;
-    const userId = params.userId;
+    
+    const { id: roleId, userId } = context.params as { id: string; userId: string };
 
     if (!roleId || !userId) {
       return NextResponse.json(
