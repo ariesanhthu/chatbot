@@ -1,18 +1,29 @@
 import { toast } from "sonner";
-import { getUserId } from "@/lib/auth";
+import { getUserID } from "@/lib/auth";
+import { useUser } from "@clerk/nextjs";
 
 /**
  * Tạo một cuộc trò chuyện mới
  * @param title Tiêu đề của cuộc trò chuyện
  * @returns Promise<{ success: boolean; data?: any; error?: string }>
  */
-export async function createNewChat(title: string): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function createNewChat(title: string, userId: string): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const userId = await getUserId();
+  //   // Use Clerk hook to get current user details
+  // const { user, isLoaded } = useUser();
+
+  // // Once loaded, extract the email. Adjust property path based on your Clerk configuration.
+  // const email = user?.primaryEmailAddress?.emailAddress;
+  // if (!email) {
+  //   console.error("Email not available");
+  //   return { success: false, error: "Email not available" };
+  // }
+
+  // const userId = await getUserID(email);
     
-    if (!userId) {
-      return { success: false, error: "Bạn cần đăng nhập để tạo cuộc trò chuyện" };
-    }
+  if (!userId) {
+    return { success: false, error: "Bạn cần đăng nhập để tạo cuộc trò chuyện" };
+  }
     
     const response = await fetch('/api/conversations', {
       method: 'POST',
@@ -43,10 +54,9 @@ export async function createNewChat(title: string): Promise<{ success: boolean; 
  * @param chatId ID của cuộc trò chuyện cần xóa
  * @returns Promise<{ success: boolean; error?: string }>
  */
-export async function deleteChat(chatId: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteChat(chatId: string, userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const userId = await getCurrentUserId();
-    
+     
     if (!userId) {
       return { success: false, error: "Bạn cần đăng nhập để xóa cuộc trò chuyện" };
     }
@@ -73,13 +83,8 @@ export async function deleteChat(chatId: string): Promise<{ success: boolean; er
  * @param groupId ID của nhóm
  * @returns Promise<{ success: boolean; error?: string }>
  */
-export async function addChatToGroup(chatId: string, groupId: string): Promise<{ success: boolean; error?: string }> {
+export async function addChatToGroup(chatId: string, groupId: string, userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const userId = await getCurrentUserId();
-    
-    if (!userId) {
-      return { success: false, error: "Bạn cần đăng nhập để thêm cuộc trò chuyện vào nhóm" };
-    }
     
     const response = await fetch(`/api/conversations/${chatId}/group`, {
       method: 'PUT',

@@ -46,6 +46,15 @@ export async function POST(req: Request) {
     })
   }
 
+  // Log the entire event for debugging
+  console.log("Received Clerk webhook event:", JSON.stringify(evt, null, 2));
+
+  // Only process if event type is "user.created" (or the type you expect)
+  if (evt.type !== "user.created") {
+    console.log(`Ignoring event type: ${evt.type}`);
+    return new Response("Event type ignored", { status: 200 });
+  }
+
   // Do something with payload
   // For this guide, log payload to console
   const { id } = evt.data
@@ -58,26 +67,29 @@ export async function POST(req: Request) {
     const firstName = evt.data.first_name || "";
     const lastName = evt.data.last_name || "";
     const fullName = `${firstName} ${lastName}`.trim();
-    const email = evt.data.email_addresses?.[0]?.email_address;
-    const { data: upsertData, error: upsertError } = await supabase
+    // Log extracted fields for debugging
+    console.log("Extracted Clerk data:", { fullName });
+
+    console.log(evt.data.email_addresses[0].email_address);
+
+    const { error: upsertError } = await supabase
     .from('users')
     .upsert(
       [
         {
           name: fullName,
-          email,
-          status: 'tốt'
+          email: evt.data.email_addresses[0].email_address,
+          status: "tốt",
         }
       ],
       { onConflict: 'id' }
     );
-
     if (upsertError) {
         console.error("Error upserting user:", upsertError);
         return new Response("Error upserting user", { status: 500 });
     }
 
   }
-
+  
   return new Response('Webhook received', { status: 200 })
 }

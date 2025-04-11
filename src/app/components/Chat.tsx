@@ -42,14 +42,14 @@
 
 import { MultimodalInput } from "./MultimodalInput";
 import { cn } from "@/lib/utils";
-import { Message } from "@/lib/interface";
+import { MessageProps } from "@/lib/interface";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useRef } from "react";
 
 interface ChatProps {
   id: string;
   isReadonly: boolean;
-  messages: Message[];
+  messages: MessageProps[];
   input: string;
   setInput: (value: string) => void;
   handleSubmit: () => void;

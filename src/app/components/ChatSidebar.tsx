@@ -30,10 +30,11 @@ import {
 import { cn } from "@/lib/utils";
 import useSWR from 'swr';
 import { toast } from "sonner";
-import { getUserId } from "@/lib/auth";
+import { getUserID } from "@/lib/auth";
 import  ChatItem, {Chat} from "./chat/ChatItem";
 import ChatGroup, {ChatGroupType} from "./chat/ChatGroup";
 import { createNewChat, deleteChat, addChatToGroup } from "@/app/services/chatService";
+import { useUser } from "@clerk/nextjs";
 
 // Fetcher function cho useSWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -47,33 +48,68 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  
-  // Fetch chat groups data using useSWR
-  const { data, error, isLoading, mutate } = useSWR('/api/chatgroups', fetcher);
-  
+  // Use Clerk hook to get current user details
+  const { user, isLoaded } = useUser();
+
+  // Once loaded, extract the email. Adjust property path based on your Clerk configuration.
+  const email = user?.primaryEmailAddress?.emailAddress;
+
+  // Fetch chat groups ONLY when userId is available
+  const { data, error, isLoading, mutate } = useSWR(
+    userId ? `/api/chatgroups?userId=${userId}` : null,
+    fetcher
+  );
   // Extract chat groups and ungrouped chats from the data
   const chatGroups = data?.data || [];
   const ungroupedChats = chatGroups
     .flatMap((group: ChatGroupType) => group.conversations)
     .filter((chat: Chat) => !chat.group_id);
 
-  // Lấy thông tin người dùng từ Supabase
-  useEffect(() => {
-    const fetchUser = async () => {
-      const id = await getUserId();
-      setUserId(id);
-    };
-    
-    fetchUser();
-  }, []);
+
+    // Get ID User
+    useEffect(() => {
+
+      console.log("Current user state:", { email, isLoaded, userId });
+      const fetchUser = async () => {
+        if (!email || !isLoaded) {
+          return;
+        }
+
+        try {
+          const id = await getUserID(email);
+          if (id) {
+            setUserId(id);
+            console.log("User ID loaded:", id);
+          } else {
+            console.error("User ID not found for email:", email);
+          }
+        } catch (error) {
+          console.error("Error fetching user ID:", error);
+        }
+      };
+
+      fetchUser();
+    }, [email, isLoaded]);
+
 
   const handleChatClick = useCallback((chatId: string) => {
     setSelectedChat(chatId);
   }, []);
 
   const handleDeleteChat = useCallback(async (chatId: string) => {
-    const result = await deleteChat(chatId);
-    
+    // Kiểm tra và lấy userId nếu chưa có
+    let currentUserId = userId;
+    if (!currentUserId && email) {
+      currentUserId = await getUserID(email);
+      setUserId(currentUserId);
+    }
+
+    if (!currentUserId) {
+      toast.error("Không thể xác định người dùng. Vui lòng đăng nhập lại.");
+      return;
+    }
+    const result = await deleteChat(chatId, currentUserId);
+
     if (result.success) {
       toast.success('Đã xóa cuộc trò chuyện thành công');
       mutate();
@@ -83,12 +119,23 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
   }, [mutate]);
 
   const handleAddToGroup = useCallback(async (chatId: string) => {
+    // Kiểm tra và lấy userId nếu chưa có
+    let currentUserId = userId;
+    if (!currentUserId && email) {
+      currentUserId = await getUserID(email);
+      setUserId(currentUserId);
+    }
+
+    if (!currentUserId) {
+      toast.error("Không thể xác định người dùng. Vui lòng đăng nhập lại.");
+      return;
+    }
     // Trong thực tế, bạn sẽ hiển thị một modal để chọn nhóm
     // Ở đây, tôi sẽ sử dụng nhóm đầu tiên làm ví dụ
     if (chatGroups.length > 0) {
       const groupId = chatGroups[0].id;
-      const result = await addChatToGroup(chatId, groupId);
-      
+      const result = await addChatToGroup(chatId, groupId, currentUserId);
+
       if (result.success) {
         toast.success('Đã thêm cuộc trò chuyện vào nhóm thành công');
         mutate();
@@ -107,23 +154,27 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
 
   const handleCreateNewChat = useCallback(async () => {
     try {
-      if (!userId) {
-        toast.error("Bạn cần đăng nhập để tạo cuộc trò chuyện");
+      // Kiểm tra và lấy userId nếu chưa có
+      let currentUserId = userId;
+      if (!currentUserId && email) {
+        currentUserId = await getUserID(email);
+        setUserId(currentUserId);
+      }
+
+      if (!currentUserId) {
+        toast.error("Không thể xác định người dùng. Vui lòng đăng nhập lại.");
         return;
       }
-      
+
       setIsCreatingChat(true);
-      
-      // Tạo tiêu đề mặc định cho chat mới
+
       const title = `New Chat ${new Date().toLocaleTimeString()}`;
-      
-      const result = await createNewChat(title);
-      
+      const result = await createNewChat(title, currentUserId);
+
       if (result.success) {
         toast.success('Đã tạo cuộc trò chuyện thành công');
         mutate();
-        
-        // Chọn chat mới tạo
+
         if (result.data && result.data[0]) {
           setSelectedChat(result.data[0].id);
         }
@@ -136,20 +187,36 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
     } finally {
       setIsCreatingChat(false);
     }
-  }, [mutate, userId]);
-
+  }, [mutate, userId, email]);
   return (
     <div
       className={cn(
-        "h-[calc(100vh-4rem)] mt-20 left-0 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sidebar-transition absolute top-0 right-0 z-20 w-72",
-        isCollapsed ? "w-[60px]" : "w-[280px]"
+        "h-[calc(100vh-4rem)] mt-20 pt-10 left-0 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sidebar-transition absolute top-0 right-0 z-20 w-72",
+        isCollapsed ? "w-[80px]" : "w-[300px]"
       )}
     >
       <div className="flex items-center justify-between p-6 border-b mt-20">
+
+        {!isCollapsed && (
+          <div className="flex gap-2 flex-col justify-center">
+            <Button
+              className="flex-1 bg-foreground"
+              onClick={handleCreateNewChat}
+              disabled={isCreatingChat}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {isCreatingChat ? 'Creating...' : 'New Chat'}
+            </Button>
+            <Button className="flex-1 bg-foreground" onClick={handleCreateGroup}>
+              <FolderPlus className="mr-2 h-4 w-4" />
+              New Group
+            </Button>
+          </div>
+        )}
         <Button
           variant="ghost"
           size="icon"
-          className="shrink-0"
+          className="shrink-0 bg-primary"
           onClick={onToggle}
         >
           {isCollapsed ? (
@@ -158,22 +225,6 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
             <ChevronFirst className="h-4 w-4 hover:bg-red-400" />
           )}
         </Button>
-        {!isCollapsed && (
-          <div className="flex gap-2 flex-col">
-            <Button 
-              className="flex-1" 
-              onClick={handleCreateNewChat}
-              disabled={isCreatingChat}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {isCreatingChat ? 'Creating...' : 'New Chat'}
-            </Button>
-            <Button className="flex-1" onClick={handleCreateGroup}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              New Group
-            </Button>
-          </div>
-        )}
       </div>
       <ScrollArea className="h-[calc(100%-73px)]">
         <div className="p-4 space-y-4">

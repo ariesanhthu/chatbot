@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, MessageSquare, FolderPlus, Trash } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export interface Chat {
   id: string;
@@ -45,7 +46,13 @@ export default function ChatItem({
         <MessageSquare className="h-5 w-5 text-muted-foreground shrink-0" />
         {!isCollapsed && (
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium truncate">{chat.title}</h3>
+            <Link
+              href={`/chat/${chat.id}`}
+              prefetch={true} 
+              onClick={() => onClick()}
+            >
+              <h3 className="font-medium truncate">{chat.title}</h3>
+            </Link>
           </div>
         )}
       </div>

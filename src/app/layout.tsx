@@ -17,6 +17,7 @@ import {
   // UserButton,
 } from '@clerk/nextjs'
 
+import { AuthProvider } from "@/context/AuthContext";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -56,29 +57,31 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="vi">
-        <head>
-          <script
-            dangerouslySetInnerHTML={{
-              __html: THEME_COLOR_SCRIPT,
-            }}
-          />
-        </head>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
+      <AuthProvider>
+        <html lang="vi">
+          <head>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: THEME_COLOR_SCRIPT,
+              }}
+            />
+          </head>
+          <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           >
-            <Toaster position="top-center" />
-            <Navbar />
-            {children}
-          </ThemeProvider>
-        </body>
-      </html>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Toaster position="top-center" />
+              <Navbar />
+              {children}
+            </ThemeProvider>
+          </body>
+        </html>
+      </AuthProvider>
     </ClerkProvider>
 
   );
