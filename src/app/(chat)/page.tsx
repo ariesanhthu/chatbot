@@ -11,7 +11,7 @@ import { MessageProps, MessageRole, MessageType } from "@/lib/interface";
 import { useAuth } from "@/context/AuthContext";
 import { BotId } from "@/lib/ExternalData";
 import { useParams } from "next/navigation";
-import EmotionDetector from "../components/EmotionDetector";
+// import EmotionDetector from "../components/EmotionDetector";
 export default function ChatPage(){
 
     // const { id } = useParams() as { id: string};
@@ -120,7 +120,7 @@ export default function ChatPage(){
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 Start a conversation by sending a message...
-                <EmotionDetector/>
+                {/* <EmotionDetector/> */}
               </div>
             ) : (
               messages.map((msg, index) => (
