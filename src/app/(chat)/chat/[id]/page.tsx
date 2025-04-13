@@ -96,7 +96,7 @@ export default function ChatPage(){
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          botMessage: { content: chatData.content, type: "text" },
+          botMessage: { content: chatData.content, type: "text" }
         }),
       });
       console.log("Bot message API response", botMsgRes);

@@ -10,3 +10,9 @@ declare global {
     }
   }
 }
+declare module '@gradio/client' {
+  export class Client {
+    static connect(endpoint: string): Promise<Client>;
+    predict(path: string, payload: Record<string, any>): Promise<{ data: any }>;
+  }
+}
