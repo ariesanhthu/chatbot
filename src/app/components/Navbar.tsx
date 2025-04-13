@@ -57,13 +57,13 @@ export function Navbar() {
           </Button>
           {!isSignedIn ? (
             <div className="flex gap-4">
-                <div className="text-white btn rounded-lg bg-gray-950 py-2 px-4 hover:bg-gray-900 transition">
+                <div className="text-white btn rounded-lg bg-primary py-2 px-4 hover:bg-gray-900 transition">
                     <SignInButton fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/">
                         Sign In
                     </SignInButton>
                 </div>
 
-                <div className="px-4 py-2 border-gray-950 border text-black rounded-lg hover:bg-gray-200 transition">
+                <div className="px-4 py-2 border-gray-950 border-primary text-white rounded-lg hover:bg-gray-200 transition">
                     <SignUpButton signInFallbackRedirectUrl="/" fallbackRedirectUrl="/">
                         Sign Up
                     </SignUpButton>
