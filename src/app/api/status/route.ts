@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getUserID } from '@/lib/auth';
+import { useId } from 'react';
 
 const statusMap: Record<string, 'tốt' | 'bình thường' | 'không ổn'> = {
   happy: 'tốt',
@@ -84,6 +85,38 @@ export async function POST(req: Request) {
     console.error('API error:', err);
     return NextResponse.json(
       { error: err.message ?? 'Internal error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: Request): Promise<Response> {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    console.log("userid", useId);
+    const { data: data, error } = 
+      await supabase
+      .from('user_status')
+      .select('user_id, status, count, date')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error("User lookup error:", error);
+      return NextResponse.json(
+        { error: "User not found"},
+        { status: 404 }
+      );
+    }
+
+    console.log(data);
+
+    return NextResponse.json({ data: data }, { status: 200 });
+  } catch (err: any) {
+    console.error("Error in GET /api/user_status:", err);
+    return NextResponse.json(
+      { error: err.message || "Unknown error" },
       { status: 500 }
     );
   }
