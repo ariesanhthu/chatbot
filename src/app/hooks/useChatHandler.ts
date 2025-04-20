@@ -74,9 +74,7 @@ export function useChatHandler({ conversationId, userId, BotId }: ChatHandlerPar
         }
 
         // 5. Gửi prompt khác để phân tích trạng thái của user dựa trên input hoặc lịch sử chat.
-        // Ví dụ, bạn xây dựng prompt theo mẫu tùy ý.
-        const analysisPrompt = `Phân tích cảm xúc của người dùng dựa trên tin nhắn: "${input}"`;
-        const analysis = await sendAnalysisPrompt(analysisPrompt);
+        const analysis = await sendAnalysisPrompt(userMessage.content);
         setAnalysisResult(analysis);
 
       } catch (error) {

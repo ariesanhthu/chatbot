@@ -10,11 +10,11 @@ export async function sendPrompt(messages: MessageProps[]) {
     return data.response;
   }
   
-  export async function sendAnalysisPrompt(messages: MessageProps[]) {
+  export async function sendAnalysisPrompt(message: string) {
     const response = await fetch('/api/analyze-emotion/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ message })
     });
     const data = await response.json();
     return data.analysis;

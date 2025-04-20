@@ -1,9 +1,12 @@
 import { Groq } from "groq-sdk";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-
+import { MessageRole } from "@/lib/interface";
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY! });
-
+interface ChatCompletionNonFunctionMessageParam {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
 export async function POST(
     req: Request,
 )
@@ -22,16 +25,16 @@ export async function POST(
     // Parse và kiểm tra dữ liệu đầu vào
     const body = await req.json();
     
-    if (!body || !body.messages || !Array.isArray(body.messages)) {
-      console.error("Dữ liệu đầu vào không hợp lệ:", body);
-      return NextResponse.json(
-        { error: "Dữ liệu đầu vào không hợp lệ" },
-        { status: 400 }
-      );
-    }
+    // if (!body || !body.messages || !Array.isArray(body.messages)) {
+    //   console.error("Dữ liệu đầu vào không hợp lệ:", body);
+    //   return NextResponse.json(
+    //     { error: "Dữ liệu đầu vào không hợp lệ" },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Kiểm tra xem có tin nhắn nào không
-    if (body.messages.length === 0) {
+    if (body.message == null) {
       return NextResponse.json(
         { error: "Không có tin nhắn nào được gửi" },
         { status: 400 }
@@ -39,27 +42,32 @@ export async function POST(
     }
 
     // Kiểm tra và chuẩn hóa định dạng tin nhắn
-    const validMessages = body.messages.map((msg: any) => {
-      // Đảm bảo mỗi tin nhắn có role và content
-      if (!msg.role || !msg.content) {
-        throw new Error("Tin nhắn không có role hoặc content");
-      }
+    // const validMessages = body.messages.map((msg: any) => {
+    //   // Đảm bảo mỗi tin nhắn có role và content
+    //   if (!msg.role || !msg.content) {
+    //     throw new Error("Tin nhắn không có role hoặc content");
+    //   }
       
-      // Đảm bảo role là một trong các giá trị hợp lệ
-      if (!["system", "user", "assistant"].includes(msg.role)) {
-        throw new Error(`Role không hợp lệ: ${msg.role}`);
-      }
+    //   // Đảm bảo role là một trong các giá trị hợp lệ
+    //   if (!["system", "user", "assistant"].includes(msg.role)) {
+    //     throw new Error(`Role không hợp lệ: ${msg.role}`);
+    //   }
       
-      return {
-        role: msg.role,
-        content: String(msg.content) // Đảm bảo content là string
-      };
-    });
-
+    //   return {
+    //     role: msg.role,
+    //     content: String(msg.content) // Đảm bảo content là string
+    //   };
+    // });
+   
     // Chuẩn bị tin nhắn cho API
-    const messages = [
-      { role: "system", content: "Đánh giá và phân loại đoạn chat của người dùng. Yêu cầu: chỉ trả về 1 số duy nhất tương ứng với các trạng thái: (0: 'bình thường'), (1: 'tốt'), (2: 'không ổn'), (3: 'trầm cảm')" },
-      ...validMessages,
+    const messages: ChatCompletionNonFunctionMessageParam[] = [
+      { 
+        role: "system", 
+        content: "Đánh giá và phân loại đoạn chat của người dùng. Yêu cầu: chỉ trả về 1 số duy nhất tương ứng với các trạng thái: (0: 'bình thường'), (1: 'tốt'), (2: 'không ổn'), (3: 'trầm cảm')" 
+      },
+      {
+        role: MessageRole.USER, 
+        content: body.message},
     ];
 
     console.log("Gửi yêu cầu đến Groq API với tin nhắn:", JSON.stringify(messages, null, 2));
