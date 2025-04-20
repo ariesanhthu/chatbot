@@ -96,7 +96,7 @@ export default function ChatPage(){
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          botMessage: { content: chatData.content, type: "text" },
+          botMessage: { content: chatData.content, type: "text" }
         }),
       });
       console.log("Bot message API response", botMsgRes);
@@ -110,7 +110,7 @@ export default function ChatPage(){
   };
 
   return (
-    <div className="container mx-auto p-4 w-screen h-[calc(100vh-2rem)]">
+    <div className="container mx-auto p-4 w-screen h-[calc(100vh-2rem)] mt-20">
       <Card className="flex flex-col h-full border-2 bg-slate-950 shadow-lg max-w-4xl mx-auto">
 
         <ScrollArea className="flex-1 p-4 overflow-y-auto">

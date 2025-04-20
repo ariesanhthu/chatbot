@@ -191,7 +191,7 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
   return (
     <div
       className={cn(
-        "h-[calc(100vh-4rem)] mt-20 pt-10 left-0 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sidebar-transition absolute top-0 right-0 z-20 w-72",
+        "h-[calc(100vh-4rem)] z-50 mt-20 pt-10 left-0 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sidebar-transition absolute top-0 right-0 w-72",
         isCollapsed ? "w-[80px]" : "w-[300px]"
       )}
     >

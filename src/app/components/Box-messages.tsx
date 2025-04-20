@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
+import CameraComponent from "./Camera";
 // Định nghĩa các interface cho SpeechRecognition
 interface SpeechRecognitionEvent extends Event {
   resultIndex: number;
@@ -329,7 +329,8 @@ export function MessageInput({
                 className="shrink-0"
                 disabled={isLoading}
               >
-                <Camera className="h-5 w-5" />
+                {/* <Camera className="h-5 w-5" /> */}
+                {/* <CameraComponent/> */}
               </Button>
             </TooltipTrigger>
             <TooltipContent>Take photo</TooltipContent>

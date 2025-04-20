@@ -6,6 +6,7 @@
 //     timestamp: Date;
 //   }
 // Enum for message types
+
 export enum MessageType {
   TEXT = "text",
   IMAGE = "image",
