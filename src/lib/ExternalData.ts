@@ -1,1 +1,1 @@
-export const BotId = "fd9f7b17-3753-4e9e-a07a-d5404927627d";
+export const BotId = "389b513e-2109-4276-9a05-edd5ac3c8d95";

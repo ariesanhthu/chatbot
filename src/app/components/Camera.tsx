@@ -376,7 +376,7 @@ export default function CameraDialog() {
                   </Button>
                 </div>
                 {analysisResult && (
-                  <div className="mt-4 p-4 bg-gray-100 rounded-lg w-full">
+                  <div className="mt-4 p-4 rounded-lg w-full">
                     <h3 className="font-semibold mb-2">Kết quả phân tích:</h3>
                     <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-40">{JSON.stringify(analysisResult, null, 2)}</pre>
                   </div>

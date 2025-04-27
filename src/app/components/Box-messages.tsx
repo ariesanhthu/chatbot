@@ -100,6 +100,8 @@ export function MessageInput({
   const lastTranscriptRef = useRef<string>("");
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const intervalTranscriptRef = useRef(""); // Thêm ref mới để theo dõi transcript
+  
   // Khởi tạo SpeechRecognition
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -147,40 +149,38 @@ export function MessageInput({
       if (recognition) {
         recognition.stop();
       }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
+      if (mediaRecorderRef.current?.state !== 'inactive') {
+        mediaRecorderRef.current?.stop();
+        mediaRecorderRef.current?.stream.getTracks().forEach(track => track.stop());
       }
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-      }
+      checkIntervalRef.current && clearInterval(checkIntervalRef.current);
     };
   }, []);
 
   // Thiết lập interval kiểm tra sau mỗi giây
   useEffect(() => {
     if (isRecording) {
-      // Thiết lập interval kiểm tra sau mỗi giây
-      const interval = setInterval(() => {
-        const currentTranscript = lastTranscriptRef.current;
+      if (isRecording) {
+        const interval = setInterval(() => {
+          const currentTranscript = lastTranscriptRef.current;
+          
+          if (currentTranscript === intervalTranscriptRef.current) {
+            setSilenceCount(prev => {
+              const newCount = prev + 1;
+              if (newCount >= 3) {
+                stopRecording();
+                return 0;
+              }
+              return newCount;
+            });
+          } else {
+            intervalTranscriptRef.current = currentTranscript;
+            setSilenceCount(0);
+          }
+        }, 1000);
         
-        // Nếu transcript không thay đổi, tăng silenceCount
-        if (currentTranscript === lastTranscriptRef.current) {
-          setSilenceCount(prev => {
-            const newCount = prev + 1;
-            // Nếu đã im lặng 3 giây, dừng ghi âm
-            if (newCount >= 3) {
-              stopRecording();
-              return 0;
-            }
-            return newCount;
-          });
-        } else {
-          // Nếu transcript thay đổi, reset silenceCount
-          setSilenceCount(0);
-        }
-      }, 1000);
-      
-      checkIntervalRef.current = interval;
+        checkIntervalRef.current = interval;
+      }
     } else {
       // Dọn dẹp interval khi không ghi âm
       if (checkIntervalRef.current) {
@@ -196,7 +196,7 @@ export function MessageInput({
       }
     };
   }, [isRecording]);
-
+{/* KIỂM TRA Ở ĐÂY */}
   const handleSendMessage = () => {
     if (!input.trim() || isLoading) return;
     handleSubmit();
@@ -260,13 +260,13 @@ export function MessageInput({
     setIsRecording(false);
     toast.success("Đã dừng ghi âm");
     
-    // Cập nhật input với transcript cuối cùng
-    const finalText = finalTranscript + interimTranscript;
-    if (finalText.trim()) {
-      setInput(input + finalText);
-      setFinalTranscript("");
-      setInterimTranscript("");
-    }
+     // Cập nhật input với functional update
+     const finalText = finalTranscript + interimTranscript;
+     if (finalText.trim()) {
+       setInput(finalText);
+     }
+     setFinalTranscript("");
+     setInterimTranscript("");
   };
 
   const handleVoiceRecord = () => {
@@ -326,21 +326,6 @@ export function MessageInput({
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0"
-                disabled={isLoading}
-              >
-                {/* <Camera className="h-5 w-5" /> */}
-                {/* <CameraComponent/> */}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Take photo</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
                 className={cn(
                   "shrink-0",
                   isRecording && "text-red-500 animate-pulse"
@@ -385,13 +370,18 @@ export function MessageInput({
             <TooltipContent>Add emoji</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-
+{/* KIỂM TRA Ở ĐÂY */}
         <Input
           value={inputValue}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
           className="flex-1"
-          onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
           disabled={isLoading}
         />
 
@@ -405,7 +395,7 @@ export function MessageInput({
           <Send className="h-5 w-5" />
         </Button>
       </div>
-
+{/* KIỂM TRA Ở ĐÂY */}
       <input
         type="file"
         ref={fileInputRef}

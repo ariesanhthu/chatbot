@@ -44,7 +44,7 @@ import { MultimodalInput } from "./MultimodalInput";
 import { cn } from "@/lib/utils";
 import { MessageProps } from "@/lib/interface";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef,useState } from "react";
 
 interface ChatProps {
   id: string;
@@ -66,14 +66,15 @@ export function Chat({
   isLoading,
 }: ChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const [inputPosition, setInputPosition] = useState<"center" | "bottom">("center")
+  
   // Tự động cuộn xuống tin nhắn mới nhất
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-4rem)]">
+    <div className="relative flex h-full flex-col max-h-[calc(100vh-4rem)]">
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4 md:p-6">
         <div className="space-y-6 max-w-3xl mx-auto">
@@ -120,7 +121,14 @@ export function Chat({
       </ScrollArea>
 
       {/* Input Area - Aligned with chat area */}
-      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"> */}
+      <div
+        className={`transition-all duration-300 ease-in-out ${
+          inputPosition === "center"
+            ? "absolute left-1/2 top-1/2 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 px-4"
+            : "sticky bottom-0 w-full px-4 py-4"
+        }`}
+      >
         <form
           className="flex mx-auto px-4 py-4 md:py-6 gap-2 w-full max-w-3xl"
           onSubmit={(e) => {

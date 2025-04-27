@@ -107,3 +107,68 @@ export async function addChatToGroup(chatId: string, groupId: string, userId: st
     return { success: false, error: 'Đã xảy ra lỗi khi thêm cuộc trò chuyện vào nhóm' };
   }
 } 
+// services/chatService.ts
+import { MessageRole, MessageType } from '@/lib/interface'
+
+export interface SaveMessagePayload {
+  conversationId: string
+  content: string
+  type: MessageType
+  userId?: string | null
+}
+
+export interface ChatPromptPayload {
+  messages: Array<{ role: MessageRole; content: string }>
+}
+
+export const chatService = {
+  saveUserMessage: (payload: SaveMessagePayload) =>
+    fetch(`/api/conversations/${payload.conversationId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: { content: payload.content, type: payload.type }, userId: payload.userId }),
+    }),
+
+  sendChatPrompt: (payload: ChatPromptPayload) =>
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(async res => {
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      return data.content as string
+    }),
+
+    analyzeEmotion: async (text: string): Promise<string> => {
+      const res = await fetch('/api/analyze-emotion/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+    
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText);
+      }
+    
+      // Kết quả JSON từ API phải có dạng { data: string }
+      const { data } = await res.json() as { data: string };
+      return data;  // đây sẽ là Promise<string> nhờ async
+    },
+
+  saveBotMessage: (conversationId: string, content: string) =>
+    fetch(`/api/conversations/${conversationId}/messages`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ botMessage: { content, type: 'text' } }),
+    }),
+
+  saveUserStatus: (userId: string | null, status: string) =>
+  fetch('/api/status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, userId }),
+  })
+  
+}

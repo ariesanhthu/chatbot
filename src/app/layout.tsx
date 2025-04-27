@@ -9,12 +9,7 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 import {
-  ClerkProvider,
-  // SignInButton,
-  // SignUpButton,
-  // SignedIn,
-  // SignedOut,
-  // UserButton,
+  ClerkProvider
 } from '@clerk/nextjs'
 
 import { AuthProvider } from "@/context/AuthContext";
@@ -29,27 +24,6 @@ export const metadata: Metadata = {
   description: "AI Chatbot tư vấn học đường",
 };
 
-
-const LIGHT_THEME_COLOR = 'hsl(0 0% 100%)';
-const DARK_THEME_COLOR = 'hsl(240deg 10% 3.92%)';
-const THEME_COLOR_SCRIPT = `\
-(function() {
-  var html = document.documentElement;
-  var meta = document.querySelector('meta[name="theme-color"]');
-  if (!meta) {
-    meta = document.createElement('meta');
-    meta.setAttribute('name', 'theme-color');
-    document.head.appendChild(meta);
-  }
-  function updateThemeColor() {
-    var isDark = html.classList.contains('dark');
-    meta.setAttribute('content', isDark ? '${DARK_THEME_COLOR}' : '${LIGHT_THEME_COLOR}');
-  }
-  var observer = new MutationObserver(updateThemeColor);
-  observer.observe(html, { attributes: true, attributeFilter: ['class'] });
-  updateThemeColor();
-})();`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -59,13 +33,6 @@ export default function RootLayout({
     <ClerkProvider>
       <AuthProvider>
         <html lang="vi">
-          <head>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: THEME_COLOR_SCRIPT,
-              }}
-            />
-          </head>
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           >

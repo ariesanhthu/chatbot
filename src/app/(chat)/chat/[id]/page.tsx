@@ -11,108 +11,28 @@ import { MessageProps, MessageRole, MessageType } from "@/lib/interface";
 import { useAuth } from "@/context/AuthContext";
 import { BotId } from "@/lib/ExternalData";
 import { useParams } from "next/navigation";
+import { useChatService } from "@/app/hooks/useChatService";
+
 export default function ChatPage(){
 
     const { id } = useParams() as { id: string};
     // const { id } = params; // Lấy chatId từ URL
+    const { userId } = useAuth()
 
-  const [messages, setMessages] = useState<MessageProps[]>([]);
-  const [input, setInput] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { userId} = useAuth();
+  // Dùng hook service mới
+  const { messages, isLoading, sendMessage } = useChatService(id, userId)
+  const [input, setInput] = useState<string>('')
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-    // Tạo message của người dùng
-    const userMessage = {
-        id: crypto.randomUUID(),
-        conversationId: id,
-        content: input,
-        senderId: userId, 
-        messageType: MessageType.TEXT, // NHỚ CẬP NHẬT THÊM TYPE
-        role: MessageRole.USER,
-        timestamp: new Date()
-    };
-    
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setInput("");
-    setIsLoading(true);
-    
-    try {
-      // 1. Lưu user message vào database
-      const userMsgRes = await fetch(`/api/conversations/${id}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          message: {
-            content: input,
-            type: 'text'
-          },
-          userId: userId
-        }),
-      });
-      console.log("userMsgRes message API response", userMsgRes);
-      
-      // 2. Gọi API chat để lấy phản hồi từ model
-      const chatResponse = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          messages: newMessages.map(msg => ({
-            role: msg.senderId === BotId ? MessageRole.ASSISTANT : MessageRole.USER,
-            content: msg.content
-          }))
-        }),
-      });
-      
-      if (!chatResponse.ok) {
-        console.error("Lỗi API chat:", chatResponse.statusText);
-        return;
-      }
-      
-      const chatData = await chatResponse.json();
-      if (!chatData || !chatData.content) {
-        console.error("API trả về dữ liệu không hợp lệ:", chatData);
-        return;
-      }
-      
-      // Tạo bot message
-      const botMessage = {
-        id:crypto.randomUUID(),
-        conversationId: id,
-        content: chatData.content,
-        senderId: BotId,
-        messageType: MessageType.TEXT,
-        role: MessageRole.ASSISTANT,
-        timestamp: new Date()
-      };
-
-      // Cập nhật UI
-      setMessages([...newMessages, botMessage]);
-      
-      // 3. Lưu bot message vào database
-      const botMsgRes = await fetch(`/api/conversations/${id}/messages`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          botMessage: { content: chatData.content, type: "text" }
-        }),
-      });
-      console.log("Bot message API response", botMsgRes);
-      
-      
-    } catch (error) {
-      console.error("Lỗi khi gọi API:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Gọi sendMessage và xoá input
+  const handleSubmit = () => {
+    if (!input.trim()) return
+    sendMessage(input.trim())
+    setInput('')
+  }
 
   return (
-    <div className="container mx-auto p-4 w-screen h-[calc(100vh-2rem)] mt-20">
+    <div className="container mx-auto p-4 w-screen h-[calc(100vh-2rem)] mt-10">
       <Card className="flex flex-col h-full border-2 bg-slate-950 shadow-lg max-w-4xl mx-auto">
-
         <ScrollArea className="flex-1 p-4 overflow-y-auto">
           <div className="space-y-4">
             {messages.length === 0 ? (
@@ -120,23 +40,27 @@ export default function ChatPage(){
                 Start a conversation by sending a message...
               </div>
             ) : (
-              messages.map((msg, index) => (
-                <BlockMessages key={index} role={msg.role} content={msg.content} />
+              messages.map((msg: MessageProps, idx: number) => (
+                <BlockMessages key={idx} role={msg.role} content={msg.content} />
               ))
             )}
           </div>
         </ScrollArea>
-        {/* Sử dụng Chat Component */}
-        <Chat
-          id={id}
-          isReadonly={false}
-          messages={messages}
-          input={input}
-          setInput={setInput}
-          handleSubmit={sendMessage} 
-          isLoading={isLoading}
-        />
+
+        <div className="relative flex h-full">
+          <div className="flex-1 transition-all duration-300 mr-64">
+            <Chat
+              id={id}
+              isReadonly={false}
+              messages={messages}
+              input={input}
+              setInput={setInput}
+              handleSubmit={handleSubmit}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
       </Card>
     </div>
-  );
+  )
 }

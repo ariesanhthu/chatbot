@@ -16,11 +16,10 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="flex h-screen overflow-hidden relative pt-20">
-      <main className={cn(
-        "flex-1 p-6 transition-all duration-300 ease-in-out mt-10",
-        isJournalVisible ? "mr-64" : "mr-0"
-      )}>
-        <ChatSidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
+      <ChatSidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
+      <main className={`flex-1 transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-0" : "ml-32"}`}
+      >
         {children}
       </main>
 

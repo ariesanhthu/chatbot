@@ -12,7 +12,7 @@ export async function POST(
     // Await the dynamic parameters before using them
     // const params = await context.params;
     // const conversationId = params.id; 
-    const { id: conversationId } = context.params as { id: string };
+    const { id: conversationId } = await context.params as { id: string };
 
 
     const { message, userId } = await request.json();
@@ -57,7 +57,7 @@ export async function PUT(
     // Await the dynamic parameters before using them
     // const params = await context.params;
     // const conversationId = params.id;
-    const { id: conversationId } = context.params as { id: string };
+    const { id: conversationId } = await context.params as { id: string };
 
     const { botMessage } = await request.json();
     
@@ -101,7 +101,7 @@ export async function GET(
   try {
     // Await the dynamic parameters before using them
     // const params = await context.params;
-    const {id: conversationId} = context.params as { id: string };
+    const {id: conversationId} = await context.params as { id: string };
 
     
     const { data, error } = await supabase
