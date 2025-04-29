@@ -143,9 +143,10 @@ export function MessageInput({
 
     return () => {
       rec.stop();
-      if (mediaRecorderRef.current?.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      const mr = mediaRecorderRef.current;
+      if (mr && mr.state !== 'inactive') {
+        mr.stop();
+        mr.stream.getTracks().forEach(t => t.stop());
       }
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
     };
