@@ -10,7 +10,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Camera,
   Image as ImageIcon,
   Mic,
   Paperclip,
@@ -20,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import CameraComponent from "./Camera";
+
 // Định nghĩa các interface cho SpeechRecognition
 interface SpeechRecognitionEvent extends Event {
   resultIndex: number;
@@ -66,7 +66,6 @@ interface SpeechRecognitionConstructor {
   prototype: SpeechRecognition;
 }
 
-// Mở rộng Window interface
 declare global {
   interface Window {
     SpeechRecognition?: SpeechRecognitionConstructor;
@@ -82,6 +81,7 @@ interface MessageInputProps {
   onFileUpload?: (file: File) => void;
 }
 
+
 export function MessageInput({
   input,
   setInput,
@@ -94,227 +94,166 @@ export function MessageInput({
   const [finalTranscript, setFinalTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
   const [silenceCount, setSilenceCount] = useState(0);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const lastTranscriptRef = useRef<string>("");
+  const intervalTranscriptRef = useRef("");
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const intervalTranscriptRef = useRef(""); // Thêm ref mới để theo dõi transcript
-  
-  // Khởi tạo SpeechRecognition
+  // Ref to latest stopRecording to avoid stale closure in interval
+  const stopRecordingRef = useRef<() => void>(() => {});
+
+  // Initialize SpeechRecognition
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'vi-VN'; // Sử dụng tiếng Việt
+    const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+    if (!SR) return;
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'vi-VN';
 
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-          const current = event.resultIndex;
-          const result = event.results[current];
-          const transcriptText = result[0].transcript;
-          
-          if (result.isFinal) {
-            // Kết quả cuối cùng
-            setFinalTranscript(prev => prev + transcriptText + " ");
-            setInterimTranscript("");
-            lastTranscriptRef.current = transcriptText;
-          } else {
-            // Kết quả tạm thời
-            setInterimTranscript(transcriptText);
-            lastTranscriptRef.current = transcriptText;
-          }
-        };
+    rec.onresult = (e: any) => {
+      const { resultIndex, results } = e;
+      const result = results[resultIndex][0];
+      const text = result.transcript;
 
-        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-          console.error('Speech recognition error:', event.error);
-          toast.error(`Lỗi nhận dạng giọng nói: ${event.error}`);
-          setIsRecording(false);
-        };
-
-        recognition.onend = () => {
-          if (isRecording) {
-            recognition.start();
-          }
-        };
-
-        setRecognition(recognition);
+      if (results[resultIndex].isFinal) {
+        setFinalTranscript(p => p + text + ' ');
+        setInterimTranscript('');
+        lastTranscriptRef.current = text;
+      } else {
+        setInterimTranscript(text);
+        lastTranscriptRef.current = text;
       }
-    }
+    };
+
+    rec.onerror = (e: any) => {
+      console.error('Speech recognition error:', e.error);
+      toast.error(`Lỗi nhận dạng giọng nói: ${e.error}`);
+      setIsRecording(false);
+    };
+
+    rec.onend = () => {
+      if (isRecording) rec.start();
+    };
+
+    setRecognition(rec);
 
     return () => {
-      if (recognition) {
-        recognition.stop();
-      }
+      rec.stop();
       if (mediaRecorderRef.current?.state !== 'inactive') {
-        mediaRecorderRef.current?.stop();
-        mediaRecorderRef.current?.stream.getTracks().forEach(track => track.stop());
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
       }
-      checkIntervalRef.current && clearInterval(checkIntervalRef.current);
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
     };
   }, []);
 
-  // Thiết lập interval kiểm tra sau mỗi giây
+  // Keep stopRecordingRef current
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+    }
+    recognition?.stop();
+    setIsRecording(false);
+    toast.success('Đã dừng ghi âm');
+
+    const finalText = (finalTranscript + interimTranscript).trim();
+    if (finalText) setInput(finalText);
+    setFinalTranscript('');
+    setInterimTranscript('');
+  };
+  useEffect(() => {
+    stopRecordingRef.current = stopRecording;
+  }, [stopRecording]);
+
+  // Silence detection interval
   useEffect(() => {
     if (isRecording) {
-      if (isRecording) {
-        const interval = setInterval(() => {
-          const currentTranscript = lastTranscriptRef.current;
-          
-          if (currentTranscript === intervalTranscriptRef.current) {
-            setSilenceCount(prev => {
-              const newCount = prev + 1;
-              if (newCount >= 3) {
-                stopRecording();
-                return 0;
-              }
-              return newCount;
-            });
-          } else {
-            intervalTranscriptRef.current = currentTranscript;
-            setSilenceCount(0);
-          }
-        }, 1000);
-        
-        checkIntervalRef.current = interval;
-      }
+      const id = setInterval(() => {
+        const curr = lastTranscriptRef.current;
+        if (curr === intervalTranscriptRef.current) {
+          setSilenceCount(c => {
+            if (c + 1 >= 3) {
+              stopRecordingRef.current();
+              return 0;
+            }
+            return c + 1;
+          });
+        } else {
+          intervalTranscriptRef.current = curr;
+          setSilenceCount(0);
+        }
+      }, 1000);
+      checkIntervalRef.current = id;
     } else {
-      // Dọn dẹp interval khi không ghi âm
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-        checkIntervalRef.current = null;
-      }
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
       setSilenceCount(0);
     }
-    
     return () => {
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-      }
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
     };
   }, [isRecording]);
-{/* KIỂM TRA Ở ĐÂY */}
+
   const handleSendMessage = () => {
-    if (!input.trim() || isLoading) return;
-    handleSubmit();
+    if (!isLoading) handleSubmit();
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !onFileUpload) return;
-    onFileUpload(file);
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onFileUpload) onFileUpload(file);
   };
 
   const startRecording = async () => {
     try {
-      // Bắt đầu ghi âm
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
       audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+      mr.ondataavailable = e => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        // Có thể lưu audioBlob hoặc gửi lên server nếu cần
-        console.log('Audio recorded:', audioBlob);
+      mr.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        console.log('Audio recorded:', blob);
       };
-
-      mediaRecorder.start();
-      
-      // Bắt đầu nhận dạng giọng nói
-      if (recognition) {
-        recognition.start();
-      }
-      
-      lastTranscriptRef.current = "";
+      mr.start();
+      recognition?.start();
+      lastTranscriptRef.current = '';
+      setFinalTranscript('');
+      setInterimTranscript('');
       setSilenceCount(0);
-      setFinalTranscript("");
-      setInterimTranscript("");
       setIsRecording(true);
-      toast.success("Đã bắt đầu ghi âm");
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      toast.error("Không thể bắt đầu ghi âm. Vui lòng kiểm tra quyền truy cập microphone.");
+      toast.success('Đã bắt đầu ghi âm');
+    } catch (err) {
+      console.error(err);
+      toast.error('Không thể bắt đầu ghi âm. Kiểm tra quyền microphone.');
     }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-    }
-    
-    if (recognition) {
-      recognition.stop();
-    }
-    
-    setIsRecording(false);
-    toast.success("Đã dừng ghi âm");
-    
-     // Cập nhật input với functional update
-     const finalText = finalTranscript + interimTranscript;
-     if (finalText.trim()) {
-       setInput(finalText);
-     }
-     setFinalTranscript("");
-     setInterimTranscript("");
   };
 
   const handleVoiceRecord = () => {
-    if (!isRecording) {
-      startRecording();
-      setInput(interimTranscript);
-    } else {
-      stopRecording();
-    }
+    if (isRecording) stopRecordingRef.current(); else startRecording();
   };
 
-  // Tính toán giá trị hiển thị trong input
-  const inputValue = isRecording 
-    ? input + finalTranscript + interimTranscript 
-    : input;
+  const inputValue = isRecording ? (finalTranscript + interimTranscript) : input;
 
   return (
-    <div className="border-t p-4 space-y- w-screen">
-      {/* File Drop Zone */}
-      <div className="border-2 border-dashed rounded-lg p-4 text-center hidden">
-        <p className="text-muted-foreground">
-          Drop files here or click to upload
-        </p>
-      </div>
-
-      {/* Hiển thị transcript khi đang ghi âm */}
+    <div className="border-t p-4 space-y-2 w-screen">
       {isRecording && (finalTranscript || interimTranscript) && (
         <div className="bg-gray-100 p-3 rounded-md text-sm">
-          {finalTranscript && (
-            <p className="font-medium text-gray-700">{finalTranscript}</p>
-          )}
-          {interimTranscript && (
-            <p className="text-gray-500 italic">{interimTranscript}</p>
-          )}
+          {finalTranscript && <p className="font-medium text-gray-700">{finalTranscript}</p>}
+          {interimTranscript && <p className="text-gray-500 italic">{interimTranscript}</p>}
         </div>
       )}
-
       <div className="flex items-center space-x-2">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-              >
+              <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
                 <ImageIcon className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
@@ -326,30 +265,19 @@ export function MessageInput({
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn(
-                  "shrink-0",
-                  isRecording && "text-red-500 animate-pulse"
-                )}
+                className={cn("shrink-0", isRecording && "text-red-500 animate-pulse")}
                 onClick={handleVoiceRecord}
                 disabled={isLoading}
               >
                 <Mic className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              {isRecording ? "Đang ghi âm..." : "Ghi âm giọng nói"}
-            </TooltipContent>
+            <TooltipContent>{isRecording ? "Đang ghi âm..." : "Ghi âm giọng nói"}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-              >
+              <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
                 <Paperclip className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
@@ -358,44 +286,26 @@ export function MessageInput({
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                disabled={isLoading}
-              >
+              <Button variant="ghost" size="icon" disabled={isLoading}>
                 <Smile className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Add emoji</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-{/* KIỂM TRA Ở ĐÂY */}
+
         <Input
           value={inputValue}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={e => setInput(e.target.value)}
           placeholder="Type a message..."
           className="flex-1"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSendMessage();
-            }
-          }}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); } }}
           disabled={isLoading}
         />
-
-        <Button
-          variant="default"
-          size="icon"
-          className="shrink-0"
-          onClick={handleSendMessage}
-          disabled={!input.trim() || isLoading}
-        >
+        <Button variant="default" size="icon" onClick={handleSendMessage}>
           <Send className="h-5 w-5" />
         </Button>
       </div>
-{/* KIỂM TRA Ở ĐÂY */}
       <input
         type="file"
         ref={fileInputRef}
