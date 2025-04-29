@@ -254,7 +254,7 @@ export default function CameraDialog() {
         const id = await getUserID(email);
         const saveEmotion = await fetch(`/api/status`,{
           method: 'POST',
-          body: JSON.stringify({ emotion: json.data, userId: id }),
+          body: JSON.stringify({ status: json.data, userId: id }),
           headers: {
             'Content-Type': 'application/json'
           }

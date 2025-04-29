@@ -115,7 +115,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
+        {/* <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Tìm kiếm học sinh..."
@@ -123,7 +123,7 @@ export default function DashboardPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
-        </div>
+        </div> */}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full md:w-[180px]">
             <SelectValue placeholder="Trạng thái" />
@@ -154,7 +154,7 @@ export default function DashboardPage() {
             <TableBody>
               {filteredStudents.map((student) => (
                 <TableRow key={student.id}>
-                  <TableCell className="font-medium">{student.name}</TableCell>
+                  <TableCell className="font-medium">***</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={statusConfig[student.status]?.color}>
                       {statusConfig[student.status]?.icon} {student.status}

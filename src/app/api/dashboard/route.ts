@@ -11,12 +11,71 @@ interface User {
 
 export async function GET() {
   try {
-    // Sử dụng supabase client trực tiếp
-    // Kiểm tra kết nối Supabase
-    const { data: testData, error: testError } = await supabase.from('users').select('count');
-    console.log('Test connection:', { testData, testError });
+    // Lấy tổng số lượng status cho mỗi user, group by theo status
+    const { data: userStatuses, error: statusError } = await supabase
+      .from('user_status')
+      .select('user_id, status, count, date')
+      .order('count', { ascending: false });
 
-    // Lấy thông tin của tất cả users
+    if (statusError) {
+      console.error('Error fetching user statuses:', statusError);
+      throw statusError;
+    }
+
+    // Tính tổng count cho mỗi status của mỗi user và lưu ngày mới nhất
+    const userStatusMap = new Map();
+    const userLastActiveMap = new Map();
+
+    userStatuses.forEach(record => {
+      const key = `${record.user_id}-${record.status}`;
+      if (!userStatusMap.has(key)) {
+        userStatusMap.set(key, {
+          user_id: record.user_id,
+          status: record.status,
+          total_count: 0
+        });
+      }
+      userStatusMap.get(key).total_count += record.count;
+
+      // Cập nhật lastActive cho user
+      if (!userLastActiveMap.has(record.user_id) || 
+          new Date(record.date) > new Date(userLastActiveMap.get(record.user_id))) {
+        userLastActiveMap.set(record.user_id, record.date);
+      }
+    });
+
+    // Chuyển map thành array và sắp xếp theo total_count
+    const aggregatedStatuses = Array.from(userStatusMap.values())
+      .sort((a, b) => b.total_count - a.total_count);
+
+    // Lấy status có tổng count cao nhất cho mỗi user
+    const userMaxStatus = new Map();
+    aggregatedStatuses.forEach(record => {
+      if (!userMaxStatus.has(record.user_id) || 
+          userMaxStatus.get(record.user_id).total_count < record.total_count) {
+        userMaxStatus.set(record.user_id, record);
+      }
+    });
+
+    console.log("Aggregated user statuses: ", Array.from(userMaxStatus.values()));
+
+    // Cập nhật status mới và lastActive vào bảng users
+    for (const [userId, statusData] of userMaxStatus) {
+      const lastActive = userLastActiveMap.get(userId);
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ 
+          status: statusData.status,
+          created_at: lastActive // Cập nhật lastActive
+        })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error(`Error updating status for user ${userId}:`, updateError);
+      }
+    }
+
+    // Lấy thông tin đã cập nhật của tất cả users
     const { data: users, error: usersError } = await supabase
       .from('users')
       .select(`
@@ -27,10 +86,8 @@ export async function GET() {
         created_at
       `);
 
-    console.log('Users query result:', { users, usersError });
-
     if (usersError) {
-      console.error('Detailed error:', usersError);
+      console.error('Error fetching users:', usersError);
       throw usersError;
     }
 
@@ -38,9 +95,9 @@ export async function GET() {
     const formattedData = (users as User[]).map(user => ({
       id: user.id,
       name: user.name,
-      status: user.status || 'Tốt',
+      status: user.status || 'tốt',
       lastActive: formatLastActive(user.created_at),
-      interactions: 0 // Mặc định là 0 vì không có trường này trong bảng users
+      interactions: 0
     }));
 
     return NextResponse.json({
@@ -48,7 +105,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    console.error('Error in dashboard data processing:', error);
     return NextResponse.json(
       { error: 'Internal Server Error', details: error },
       { status: 500 }

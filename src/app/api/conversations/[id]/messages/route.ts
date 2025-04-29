@@ -114,8 +114,8 @@ export async function GET(
       console.error('Error fetching messages:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
-    return NextResponse.json({ data });
+    console.log(data);
+    return NextResponse.json({ success: true, data });
   } catch (error: any) {
     console.error('Message API error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

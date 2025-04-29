@@ -3,12 +3,12 @@ import { supabase } from '@/lib/supabase';
 import { getUserID } from '@/lib/auth';
 import { useId } from 'react';
 
-const statusMap: Record<string, 'tốt' | 'bình thường' | 'không ổn'> = {
+const statusMap: Record<string, 'tốt' | 'bình thường' | 'không ổn' | 'trầm cảm'> = {
   happy: 'tốt',
   surprise: 'tốt',
   neutral: 'bình thường',
   sad: 'không ổn',
-  fear: 'không ổn',
+  fear: 'trầm cảm',
   angry: 'không ổn',
   disgust: 'không ổn',
 };
@@ -25,14 +25,14 @@ export async function POST(req: Request) {
   if (!rawStatus?.trim()) {
     return NextResponse.json({ error: 'Thiếu status' }, { status: 400 });
   }
-  // if (!userId) {
-  //   return NextResponse.json({ error: 'Thiếu userId' }, { status: 400 });
-  // }
+  if (!userId) {
+    return NextResponse.json({ error: 'Thiếu userId' }, { status: 400 });
+  }
 
-  // 2. Map & skip normal
+  // 2. Map status
   const mapped = statusMap[rawStatus.trim().toLowerCase()];
-  if (!mapped || mapped === 'bình thường') {
-    return NextResponse.json({ message: 'OK' }, { status: 200 });
+  if (!mapped) {
+    return NextResponse.json({ error: 'Trạng thái không hợp lệ' }, { status: 400 });
   }
 
   // 3. Upsert in Supabase

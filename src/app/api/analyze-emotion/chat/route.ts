@@ -1,5 +1,6 @@
 import { Groq } from "groq-sdk";
 import { NextResponse } from "next/server";
+import { TextSplit } from "@/utils/textsplit";
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY! });
 
@@ -55,8 +56,7 @@ export async function POST(req: Request) {
     }
 
     // 4️⃣ Return the emotion 
-    let textSplit = choice.match(/\w+$/);
-    const result: string = textSplit ? textSplit[0] : "neutral";
+    const result: string = TextSplit(choice);
 
     console.log("Emotion detected:", result);
     return NextResponse.json({ data: result }, { status: 200 });

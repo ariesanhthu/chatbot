@@ -2,14 +2,44 @@
 // hooks/useChatService.ts
 
 import { chatService } from './../services/chatService';
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { ChatPromptPayload } from './../services/chatService';
 import { MessageProps, MessageRole, MessageType } from "@/lib/interface";
 import { BotId } from '@/lib/ExternalData';
 
+import { speakText } from '@/utils/texttospeech';
+
 export function useChatService(conversationId: string, userId: string | null) {
   const [messages, setMessages] = useState<MessageProps[]>([])
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const response = await fetch(`/api/conversations/${conversationId}/messages`)
+        const result = await response.json()
+        console.log(result.data);
+        if (result.success) {
+          const formattedMessages: MessageProps[] = result.data.map((msg: any) => ({
+            id: msg.id,
+            conversationId: msg.conversation_id,
+            content: msg.content,
+            senderId: msg.sender_id,
+            messageType: msg.message_type,
+            role: msg.sender_id === BotId ? MessageRole.ASSISTANT : MessageRole.USER,
+            timestamp: new Date(msg.create_at),
+          }))
+          setMessages(formattedMessages)
+        }
+      } catch (error) {
+        console.error('Error fetching messages:', error)
+      }
+    }
+
+    if (conversationId) {
+      fetchMessages()
+    }
+  }, [conversationId])
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -58,7 +88,10 @@ export function useChatService(conversationId: string, userId: string | null) {
           role: MessageRole.ASSISTANT,
           timestamp: new Date(),
         }
+        
         setMessages(prev => [...prev, botMessage])
+
+        speakText(botContent, { lang: 'vi-VN', rate: 1, pitch: 1 });
 
         // 6️⃣ Lưu bot message
         if(conversationId !== '1')

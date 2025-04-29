@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { TrendingUp } from "lucide-react"
-import { Label, Pie, PieChart } from "recharts"
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 
 import {
   Card,
@@ -19,6 +19,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { ChartProps } from "@/types/chart"
+
+const COLORS = ["#22c55e", "#eab308", "#ef4444"]
 
 const chartConfig = {
   visitors: {
@@ -62,11 +64,9 @@ const PieChartComponent: React.FC<ChartProps> = ({ data, title }) => {
   }, [data]);
 
   const chartData = Object.entries(emotionTotals).map(([emotion, value]) => ({
-    name: emotion,
+    name: emotion === "happiness" ? "tốt" : emotion === "sadness" ? "không ổn" : "trầm cảm",
     value,
-    // Nếu cần, bạn có thể thêm thuộc tính fill cho từng slice:
-    fill: emotion === "happiness" ? "#36A2EB" : "#FF6384"
-
+    fill: emotion === "happiness" ? "#22c55e" : emotion === "sadness" ? "#eab308" : "#ef4444"
   }));
 
   const totalEmotion = Object.values(emotionTotals).reduce((acc, val) => acc + val, 0);
@@ -78,51 +78,28 @@ const PieChartComponent: React.FC<ChartProps> = ({ data, title }) => {
         <CardDescription>January - June 2024</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
-        >
-          <PieChart>
-            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-            <Pie
-              data={chartData}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={60}
-              strokeWidth={5}
-            >
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-3xl font-bold"
-                        >
-                          {totalEmotion}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground"
-                        >
-                          Total Emotions
-                        </tspan>
-                      </text>
-                    );
-                  }
-                }}
-              />
-            </Pie>
-          </PieChart>
-        </ChartContainer>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <RechartsPieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </RechartsPieChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
