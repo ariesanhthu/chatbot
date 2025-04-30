@@ -27,7 +27,7 @@ export default function ChatPage() {
 
   return (
     <div className="container mx-auto p-4 w-screen h-[calc(100vh-2rem)] mt-10">
-      <Card className="flex flex-col h-full border-2 bg-slate-950 shadow-lg max-w-4xl mx-auto">
+      <div className="flex flex-col h-full shadow-lg max-w-4xl mx-auto">
         <ScrollArea className="flex-1 p-4 overflow-y-auto">
           <div className="space-y-4">
             {messages.length === 0 ? (
@@ -55,7 +55,7 @@ export default function ChatPage() {
             />
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     }
 
     // 4️⃣ Return the emotion 
-    const result: string = TextSplit(choice);
+    const result: string = await TextSplit(choice);
 
     console.log("Emotion detected:", result);
     return NextResponse.json({ data: result }, { status: 200 });

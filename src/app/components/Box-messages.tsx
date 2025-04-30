@@ -243,14 +243,22 @@ export function MessageInput({
   const inputValue = isRecording ? (finalTranscript + interimTranscript) : input;
 
   return (
-    <div className="border-t p-4 space-y-2 w-screen">
+    <div className="relative rounded-2xl shadow-md w-screen dark:bg-slate-800 bg-blue-400">
       {isRecording && (finalTranscript || interimTranscript) && (
         <div className="bg-gray-100 p-3 rounded-md text-sm">
           {finalTranscript && <p className="font-medium text-gray-700">{finalTranscript}</p>}
           {interimTranscript && <p className="text-gray-500 italic">{interimTranscript}</p>}
         </div>
       )}
-      <div className="flex items-center space-x-2">
+      <Input
+          value={inputValue}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Type a message..."
+          className="min-h-[60px] w-full resize-none rounded-2xl border-0 pr-24 focus-visible:ring-2 focus-visible:ring-purple-200"
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); } }}
+          disabled={isLoading}
+        />
+      <div className="absolute bottom-2 right-2 flex items-center gap-2">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -295,15 +303,7 @@ export function MessageInput({
           </Tooltip>
         </TooltipProvider>
 
-        <Input
-          value={inputValue}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1"
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); } }}
-          disabled={isLoading}
-        />
-        <Button variant="default" size="icon" onClick={handleSendMessage}>
+        <Button variant="default" size="icon" onClick={handleSendMessage} className="h-8 w-8 rounded-full bg-black dark:bg-primary hover:bg-slate-500">
           <Send className="h-5 w-5" />
         </Button>
       </div>

@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Label } from "@radix-ui/react-label";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   MoreVertical,
   Plus,
   MessageSquare,
@@ -26,6 +29,8 @@ import {
   FolderPlus,
   ChevronFirst,
   ChevronLast,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useSWR from 'swr';
@@ -35,16 +40,106 @@ import  ChatItem, {Chat} from "./chat/ChatItem";
 import ChatGroup, {ChatGroupType} from "./chat/ChatGroup";
 import { createNewChat, deleteChat, addChatToGroup } from "@/app/services/chatService";
 import { useUser } from "@clerk/nextjs";
-
+import { useSidebar } from "../context/sidebar-provider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 // Fetcher function cho useSWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 interface ChatSidebarProps {
   isCollapsed: boolean;
-  onToggle: () => void;
 }
 
-export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
+export interface Conversation {
+  id: number
+  title: string
+  active: boolean
+  groupId: number
+  lastMessage?: string
+  lastMessageTime?: Date
+}
+
+export interface ConversationGroup {
+  id: number
+  name: string
+  conversations: Conversation[]
+}
+
+export function ChatSidebar({ isCollapsed }: ChatSidebarProps) {
+  const { sidebarState, toggleSidebar, isMobile, isSidebarVisible, setIsSidebarVisible } = useSidebar()
+ // State for groups and conversations
+ const [groups, setGroups] = useState<ConversationGroup[]>([
+  {
+    id: 1,
+    name: "Work",
+    conversations: [
+      {
+        id: 1,
+        title: "Project Discussion",
+        active: true,
+        groupId: 1,
+        lastMessage: "Let's discuss the timeline",
+        lastMessageTime: new Date(),
+      },
+      {
+        id: 2,
+        title: "Client Meeting",
+        active: false,
+        groupId: 1,
+        lastMessage: "Meeting scheduled for tomorrow",
+        lastMessageTime: new Date(Date.now() - 3600000),
+      },
+    ],
+  },
+  {
+    id: 2,
+    name: "Personal",
+    conversations: [
+      {
+        id: 3,
+        title: "Travel Plans",
+        active: false,
+        groupId: 2,
+        lastMessage: "Looking at flight options",
+        lastMessageTime: new Date(Date.now() - 86400000),
+      },
+      {
+        id: 4,
+        title: "Shopping List",
+        active: false,
+        groupId: 2,
+        lastMessage: "Don't forget groceries",
+        lastMessageTime: new Date(Date.now() - 172800000),
+      },
+    ],
+  },
+  {
+    id: 3,
+    name: "Research",
+    conversations: [
+      {
+        id: 5,
+        title: "AI Technologies",
+        active: false,
+        groupId: 3,
+        lastMessage: "Exploring new models",
+        lastMessageTime: new Date(Date.now() - 259200000),
+      },
+    ],
+  },
+])
+  // State for new group dialog
+const [newGroupName, setNewGroupName] = useState("")
+const [openGroupIds, setOpenGroupIds] = useState<number[]>([1, 2, 3]) // All groups open by default
+
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -130,8 +225,6 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
       toast.error("Không thể xác định người dùng. Vui lòng đăng nhập lại.");
       return;
     }
-    // Trong thực tế, bạn sẽ hiển thị một modal để chọn nhóm
-    // Ở đây, tôi sẽ sử dụng nhóm đầu tiên làm ví dụ
     if (chatGroups.length > 0) {
       const groupId = chatGroups[0].id;
       const result = await addChatToGroup(chatId, groupId, currentUserId);
@@ -147,10 +240,22 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
     }
   }, [chatGroups, mutate]);
 
-  const handleCreateGroup = useCallback(() => {
-    console.log("Create new group");
-    // Implement group creation logic here
-  }, []);
+  // Handle creating a new group
+  const handleCreateGroup = () => {
+    if (newGroupName.trim()) {
+      const newGroupId = Math.max(0, ...groups.map((g) => g.id)) + 1
+      setGroups([
+        ...groups,
+        {
+          id: newGroupId,
+          name: newGroupName.trim(),
+          conversations: [],
+        },
+      ])
+      setNewGroupName("")
+      setOpenGroupIds([...openGroupIds, newGroupId])
+    }
+  }
 
   const handleCreateNewChat = useCallback(async () => {
     try {
@@ -188,44 +293,145 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
       setIsCreatingChat(false);
     }
   }, [mutate, userId, email]);
-  return (
-    <div
-      className={cn(
-        "h-[calc(100vh-4rem)] z-50 mt-20 pt-10 left-0 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sidebar-transition absolute top-0 right-0 w-72",
-        isCollapsed ? "w-[80px]" : "w-[300px]"
-      )}
-    >
-      <div className="flex items-center justify-between p-6 border-b mt-20">
 
-        {!isCollapsed && (
-          <div className="flex gap-2 flex-col justify-center">
-            <Button
-              className="flex-1 bg-foreground"
-              onClick={handleCreateNewChat}
-              disabled={isCreatingChat}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {isCreatingChat ? 'Creating...' : 'New Chat'}
-            </Button>
-            <Button className="flex-1 bg-foreground" onClick={handleCreateGroup}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              New Group
+
+  // If sidebar is not visible on mobile, render only the hamburger button
+  if (isMobile && !isSidebarVisible) {
+    return (
+      <Button variant="ghost" size="icon" className="fixed left-4 top-4 z-50" onClick={() => setIsSidebarVisible(true)}>
+        <Menu className="h-5 w-5" />
+        <span className="sr-only">Open sidebar</span>
+      </Button>
+    )
+  }
+
+  return (
+    <>
+     {/* Mobile overlay */}
+     {isMobile && isSidebarVisible && (
+        <div className="fixed inset-0 z-40" onClick={() => setIsSidebarVisible(false)} />
+      )}
+
+      {/* sidebar */}
+    <div
+       className={`fixed z-50 h-full transition-all duration-300 ease-in-out shadow-md flex flex-col ${
+        isSidebarVisible ? "translate-x-0" : "-translate-x-full"
+      } ${sidebarState === "expanded" ? "w-72" : "w-16"}`}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between border-b p-4">
+          <div className="flex gap-2 ml-auto">
+            {isMobile && (
+              <Button variant="ghost" size="icon" onClick={() => setIsSidebarVisible(false)}>
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close sidebar</span>
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="bg-primary hover:bg-blue-800">
+              {sidebarState === "expanded" ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              <span className="sr-only">{sidebarState === "expanded" ? "Collapse sidebar" : "Expand sidebar"}</span>
             </Button>
           </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 bg-primary"
-          onClick={onToggle}
-        >
-          {isCollapsed ? (
-            <ChevronLast className="h-4 w-4" />
-          ) : (
-            <ChevronFirst className="h-4 w-4 hover:bg-red-400" />
-          )}
-        </Button>
       </div>
+      <div className={`p-4 ${sidebarState === "collapsed" ? "px-2" : ""} flex ${sidebarState === "expanded" ? "gap-2" : "flex-col gap-2"}`}>
+        <Button
+          className={`bg-primary hover:bg-blue-800 text-white rounded-xl ${
+            sidebarState === "expanded" ? "flex-1 justify-start gap-2" : "w-full justify-center p-2"
+          }`}
+          onClick={handleCreateNewChat}
+        >
+          <Plus className="h-4 w-4" />
+          {sidebarState === "expanded" && <span>Đoạn chat mới</span>}
+        </Button>
+
+
+        {sidebarState === "expanded" && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <FolderPlus className="h-4 w-4" />
+                  <span className="sr-only">New Group</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Tạo nhóm mới</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="group-name" className="text-right">
+                      Tên
+                    </Label>
+                    <Input
+                      id="group-name"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      className="col-span-3"
+                      placeholder="Enter group name"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Hủy</Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
+                      Tạo mới
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {sidebarState === "collapsed" && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="icon" className="w-full p-2">
+                        <FolderPlus className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Group</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="group-name-collapsed" className="text-right">
+                            Name
+                          </Label>
+                          <Input
+                            id="group-name-collapsed"
+                            value={newGroupName}
+                            onChange={(e) => setNewGroupName(e.target.value)}
+                            className="col-span-3"
+                            placeholder="Enter group name"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <DialogClose asChild>
+                          <Button onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
+                            Create Group
+                          </Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </TooltipTrigger>
+                <TooltipContent side="right">New Group</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+      </div>
+      
       <ScrollArea className="h-[calc(100%-73px)]">
         <div className="p-4 space-y-4">
           {isLoading ? (
@@ -273,5 +479,6 @@ export function ChatSidebar({ isCollapsed, onToggle }: ChatSidebarProps) {
         </div>
       </ScrollArea>
     </div>
+    </>
   );
 }

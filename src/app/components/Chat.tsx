@@ -1,43 +1,3 @@
-// import { MultimodalInput } from './MultimodalInput';
-// import { MessageInput } from './Box-messages';
-// interface ChatProps {
-//   id: string;
-//   isReadonly: boolean;
-//   messages: any[]; // You can replace `any[]` with a more specific type if available
-//   input: string;
-//   setInput: (value: string) => void;
-//   handleSubmit: () => void;
-//   isLoading: boolean;
-// }
-
-// export function Chat({
-//   id,
-//   isReadonly,
-//   messages,
-//   input,
-//   setInput,
-//   handleSubmit,
-//   isLoading,
-// }: ChatProps) {
-//   return (
-//     <div className="chat-container">
-//       {/* Other chat components like messages list */}
-//       <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
-//         {!isReadonly && (
-//           <MultimodalInput
-//             input={input}
-//             setInput={setInput}
-//             handleSubmit={handleSubmit}
-//             isLoading={isLoading}
-//           />
-//         )}
-//         {/* Message Input */}
-//        <MessageInput onSend={handleSendMessage} onFileUpload={handleFileUpload} />
-    
-//       </form>
-//     </div>
-//   );
-// }
 "use client";
 
 import { MultimodalInput } from "./MultimodalInput";
@@ -71,12 +31,18 @@ export function Chat({
   // Tự động cuộn xuống tin nhắn mới nhất
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    console.log(messages.length);
+    if(messages.length > 0)
+      setInputPosition("bottom");
+    else
+      setInputPosition("center");
+
   }, [messages]);
 
   return (
-    <div className="relative flex h-full flex-col max-h-[calc(100vh-4rem)]">
+    <div className="relative flex h-full flex-col">
       {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4 md:p-6">
+      <ScrollArea className="flex-1 overflow-y-auto p-4 pt-16">
         <div className="space-y-6 max-w-3xl mx-auto">
           {messages.map((message) => (
             <div

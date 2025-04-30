@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
     // Chuẩn bị tin nhắn cho API
     const messages = [
-      { role: "system", content: "Sử dụng tiếng việt, không được sử dụng tiếng trung quốc, trả về kết quả dưới 10 từ." },
+      { role: "system", content: "Sử dụng tiếng việt" },
       ...validMessages,
     ];
 

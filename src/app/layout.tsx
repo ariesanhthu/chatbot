@@ -13,6 +13,7 @@ import {
 } from '@clerk/nextjs'
 
 import { AuthProvider } from "@/context/AuthContext";
+import { SidebarProvider } from "./context/sidebar-provider";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -44,7 +45,9 @@ export default function RootLayout({
             >
               <Toaster position="top-center" />
               <Navbar />
-              {children}
+              <SidebarProvider>
+                {children}
+              </SidebarProvider>
             </ThemeProvider>
           </body>
         </html>

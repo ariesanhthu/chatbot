@@ -5,20 +5,18 @@ import { useState } from "react";
 import { EmotionJournal } from "../components/EmotionalJournal";
 import { Button } from "@/components/ui/button";
 import { BookOpen, X } from "lucide-react";
-
+import { useSidebar } from "../context/sidebar-provider";
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isJournalVisible, setIsJournalVisible] = useState(true);
+  const { sidebarState} = useSidebar()
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
 
   return (
     <div className="flex h-screen overflow-hidden relative pt-20">
-      <ChatSidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
+      <ChatSidebar isCollapsed={isSidebarCollapsed} />
       <main className={`flex-1 transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-0" : "ml-32"}`}
+          sidebarState !== "expanded" ? "ml-0" : "ml-32"}`}
       >
         {children}
       </main>

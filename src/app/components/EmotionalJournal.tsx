@@ -137,11 +137,11 @@ export function EmotionJournal({ className }: { className?: string }) {
           <Button
             variant="outline"
             size="sm"
-            className="text-xs flex items-center gap-1 h-8 mt-2"
+            className="text-xs flex items-center gap-1 h-8 mt-3 rounded-xl"
             onClick={() => window.location.href = '/useremotion'}
           >
             <BarChart2 className="h-3.5 w-3.5" />
-            <span>Dashboard Cảm Xúc</span>
+            <span>Báo cáo cảm Xúc</span>
           </Button>
           
           <div className="flex gap-2 flex-row mt-5">

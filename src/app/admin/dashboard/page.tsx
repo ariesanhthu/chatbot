@@ -6,7 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Users } from "lucide-react";
+import { Search, Users, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 // Định nghĩa kiểu dữ liệu cho statusConfig
 type StatusConfigType = {
@@ -87,12 +89,20 @@ export default function DashboardPage() {
     <div className="container mx-auto py-8 space-y-8 p-20 mt-10">
       <div className="flex justify-between items-center">
         <h1 className="text-4xl font-bold">Bảng điều khiển giáo viên</h1>
-        <div className="flex items-center space-x-2">
-          <Users className="h-6 w-6" />
-          <span className="font-semibold">{students.length} học sinh</span>
+        <div className="flex items-center space-x-4">
+          <Link href="/admin/role">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Quản lý vai trò
+            </Button>
+          </Link>
+          <div className="flex items-center space-x-2">
+            <Users className="h-6 w-6" />
+            <span className="font-semibold">{students.length} học sinh</span>
+          </div>
         </div>
       </div>
-
+      {/* thêm bút */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {Object.entries(statusConfig).map(([status, config]) => (
           <Card key={status}>
