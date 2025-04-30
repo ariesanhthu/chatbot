@@ -17,6 +17,7 @@ export function Navbar() {
 
   const { isSignedIn } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
+  
   useEffect(() => {
     const fetchRole = async () => {
       try {
