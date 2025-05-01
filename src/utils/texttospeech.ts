@@ -1,5 +1,4 @@
 // utils/textToSpeech.ts
-import { TextSplit } from "./textsplit";
 export async function speakText(text: string, options?: {
     lang?: string;
     rate?: number;
@@ -9,10 +8,8 @@ export async function speakText(text: string, options?: {
       console.warn('Speech Synthesis API không được hỗ trợ trong trình duyệt này.');
       return;
     }
-    const textsplit = await TextSplit(text);
-    console.log("textplit: ", textsplit);
     
-    const utterance = new SpeechSynthesisUtterance(textsplit);
+    const utterance = new SpeechSynthesisUtterance(text);
 
     // Cấu hình giọng đọc tùy chọn
     utterance.lang = options?.lang ?? 'vi-VN';

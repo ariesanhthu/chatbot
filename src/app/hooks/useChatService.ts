@@ -6,7 +6,7 @@ import { useState, useCallback, useEffect } from 'react'
 import type { ChatPromptPayload } from './../services/chatService';
 import { MessageProps, MessageRole, MessageType } from "@/lib/interface";
 import { BotId } from '@/lib/ExternalData';
-
+import { TextSplit } from "@/utils/textsplit";
 import { speakText } from '@/utils/texttospeech';
 
 export function useChatService(conversationId: string, userId: string | null) {
@@ -77,12 +77,15 @@ export function useChatService(conversationId: string, userId: string | null) {
         }
         // 4️⃣ Đợi chatPrompt hoàn thành
         const botContent = await chatService.sendChatPrompt(promptPayload)
+        
+        const textsplit = await TextSplit(botContent);
 
+        console.log("textplit: ", textsplit);
         // 5️⃣ Push bot message lên UI
         const botMessage: MessageProps = {
           id: crypto.randomUUID(),
           conversationId,
-          content: botContent,
+          content: textsplit,
           senderId: BotId,
           messageType: MessageType.TEXT,
           role: MessageRole.ASSISTANT,
@@ -91,11 +94,11 @@ export function useChatService(conversationId: string, userId: string | null) {
         
         setMessages(prev => [...prev, botMessage])
 
-        speakText(botContent, { lang: 'vi-VN', rate: 1, pitch: 1 });
+        speakText(textsplit, { lang: 'vi-VN', rate: 1, pitch: 1 });
 
         // 6️⃣ Lưu bot message
         if(conversationId !== '1')
-          chatService.saveBotMessage(conversationId, botContent);
+          chatService.saveBotMessage(conversationId, textsplit);
   
           const emotionResult = await chatService.analyzeEmotion(content)
           console.log('Emotion detected:', emotionResult)
