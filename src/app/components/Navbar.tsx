@@ -36,7 +36,7 @@ export function Navbar() {
       <div className="flex h-full items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <Link href="/" className="font-bold pl-20 text-xl text-primary">
-            Chatbot tư vấn học đường
+            PT người bạn đồng hành
           </Link>
         </div>
 
