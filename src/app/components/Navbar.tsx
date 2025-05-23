@@ -29,7 +29,7 @@ export function Navbar() {
     };
 
     fetchRole();
-  }, []);
+  }, [isAdmin]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
@@ -80,14 +80,12 @@ export function Navbar() {
                      label="Quản lý trang"
                      labelIcon={<LayoutDashboard fill="#3e9392" size={15} stroke="0"/>}
                      href="/admin/dashboard"
-                   />
+                     />
                  </UserButton.MenuItems>
                  )  : null
-              }
-              
+                }
           </UserButton>
         )}
-
         </div>
       </div>
     </nav>
