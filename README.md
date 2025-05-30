@@ -6,7 +6,7 @@ By combining conversational AI with sentiment analysis, the bot adapts its repli
 
 ---
 
-## 🛠️ Tech Stack — Quick List
+## 🛠️ Tech Stack
 - **Next.js** (React + Node)
 - **TypeScript**
 - **Tailwind CSS**
@@ -17,16 +17,12 @@ By combining conversational AI with sentiment analysis, the bot adapts its repli
 - **Recharts** – data / sentiment charts
 - **React Markdown**
 - **date-fns** utilities
-
-### **Features:**
-- Emotion detection.
-- Voice chat (speech-to-text & text-to-speech).
-
+- 
 ---
 
 ## ✨ Key Features
 - **Interactive chat UI** – modern, mobile-responsive threaded interface.  
-- **Real-time emotion detection** – classifies each user message (happy, sad, angry, etc.) and tailors responses accordingly.  
+- **Emotion detection** – classifies each user message (happy, sad, angry) and tailors responses accordingly.  
 - **Voice input & output** – speak to the bot and let it talk back using browser speech APIs.  
 - **Visual sentiment insights** – charts showing emotion trends across the conversation.  
 - **Persistent history & optional auth** – conversations stored securely in Supabase so users can return to past chats.  
