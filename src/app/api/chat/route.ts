@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
     // Chuẩn bị tin nhắn cho API
     const messages = [
-      { role: "system", content: "Sử dụng tiếng việt" },
+      { role: "system", content: "KHÔNG ĐƯỢC SỬ DỤNG CÁC KÝ TỰ TIẾNG TRUNG (ví dụ: 冥想). Chỉ được sử dụng tiếng Việt, các ký tự trong bảng chữ cái latin." },
       ...validMessages,
     ];
 

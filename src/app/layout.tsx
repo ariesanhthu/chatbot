@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from 'sonner';
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from './components/theme-provider';
 import "./globals.css";
 import { Navbar } from "./components/Navbar";
 const geistSans = Geist({
@@ -33,22 +32,15 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <AuthProvider>
-        <html lang="vi">
+        <html lang="vi" className="dark">
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           >
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
               <Toaster position="top-center" />
               <Navbar />
               <SidebarProvider>
                 {children}
               </SidebarProvider>
-            </ThemeProvider>
           </body>
         </html>
       </AuthProvider>

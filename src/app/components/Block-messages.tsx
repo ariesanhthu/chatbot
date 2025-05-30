@@ -1,70 +1,71 @@
 "use client";
-
-import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Bot, User } from "lucide-react";
+import MemoizedMarkdown from "./memoized-markdown"
+import { MessageProps } from "@/lib/interface";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 interface BlockMessagesProps {
-  role: "user" | "assistant";
-  content: string;
+  messages: MessageProps[];
+  isLoading: boolean;
 }
 
-export function BlockMessages({ role, content }: BlockMessagesProps) {
-  if (!content || typeof content !== "string") return null; // Bảo vệ content không bị null
-   // Helper function to detect if content is markdown
-   const isMarkdown = (content: string): boolean => {
-    // Check for common markdown patterns
-    const markdownPatterns = [
-      /^#+\s/, // Headers
-      /\*\*.+\*\*/, // Bold
-      /\*.+\*/, // Italic
-      /\[.+\]$$.+$$/, // Links
-      /```[\s\S]*```/, // Code blocks
-      /^\s*[-*+]\s/, // Unordered lists
-      /^\s*\d+\.\s/, // Ordered lists
-      /\|.+\|/, // Tables
-      /<Thinking>[\s\S]*<\/think>/, // Think blocks
-    ]
-
-    return markdownPatterns.some((pattern) => pattern.test(content))
-  }
-  const isUser = role === "user";
-  const hasThink = content.includes("<think>");
-  const thinkMatch = content.match(/<think>(.*?)<\/think>/);
+export function BlockMessages({ messages = [], isLoading }: BlockMessagesProps) {
 
   return (
-    <div className={cn("flex gap-3 mb-4", isUser ? "justify-end" : "justify-start")}>
-      <div className={cn("flex gap-3 max-w-[80%] rounded-lg p-4", isUser ? "bg-primary text-primary-foreground" : "bg-muted")}>
-        <div className="flex-shrink-0 mt-1">
-          {isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
-        </div>
-
-        <div className="flex-1 space-y-2">
-          {hasThink && <div className="text-sm italic p-2 rounded">💭 {thinkMatch ? thinkMatch[1] : ""}</div>}
-
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ ...props }) => <h1 className="text-xl font-bold mb-2 mt-3" {...props} />,
-                h2: ({ ...props }) => <h2 className="text-lg font-bold mb-2 mt-3" {...props} />,
-                h3: ({ ...props }) => <h3 className="text-md font-bold mb-2 mt-3" {...props} />,
-                p: ({ ...props }) => <p className="mb-2" {...props} />,
-                ul: ({ ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
-                ol: ({ ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
-                li: ({ ...props }) => <li className="mb-1" {...props} />,
-                code: ({ children, className, ...props }) => (
-                  <code className="bg-gray-200 text-sm p-1 rounded-md" {...props}>{children}</code>
-                ),
-                pre: ({ ...props }) => <pre className="bg-muted/50 rounded-lg p-2 mb-2 overflow-x-auto" {...props} />,
-                blockquote: ({ ...props }) => <blockquote className="border-l-4 border-primary/20 pl-4 italic mb-2" {...props} />,
-              }}
-            >
-              {content.replace(/<think>.*?<\/think>/, "")}
-            </ReactMarkdown>
+    <div className="space-y-4">
+      {(messages || []).map((message) => (
+        <div
+          key={message.id}
+          className={`flex items-start space-x-3 ${
+            message.role === "user" ? "flex-row-reverse space-x-reverse" : ""
+          }`}
+        >
+          <Avatar className="h-8 w-8">
+            {message.role === "assistant" ? (
+              <>
+                <AvatarFallback>
+                  <Bot className="h-4 w-4" />
+                </AvatarFallback>
+              </>
+            ) : (
+              <>
+                <AvatarFallback>
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </>
+            )}
+          </Avatar>
+          <div
+            className={`max-w-[80%] rounded-lg p-3 ${
+              message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+            }`}
+          >
+            <MemoizedMarkdown content={message.content} />
+            <p className="text-xs opacity-70 mt-1">{message.timestamp.toLocaleTimeString()}</p>
           </div>
         </div>
-      </div>
+      ))}
+      {!isLoading && (
+        <div className="flex items-start space-x-3">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback>
+              <Bot className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="bg-muted rounded-lg p-3">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
+              <div
+                className="w-2 h-2 bg-current rounded-full animate-bounce"
+                style={{ animationDelay: "0.1s" }}
+              ></div>
+              <div
+                className="w-2 h-2 bg-current rounded-full animate-bounce"
+                style={{ animationDelay: "0.2s" }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

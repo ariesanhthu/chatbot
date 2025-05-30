@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { data } from "@tensorflow/tfjs";
 
 export async function GET(request: Request): Promise<Response> {
   try {
@@ -29,8 +28,6 @@ export async function GET(request: Request): Promise<Response> {
         { status: 404 }
       );
     }
-
-    console.log(data);
     // Return the user id in the response
     return NextResponse.json({ userId: user.id }, { status: 200 });
   } catch (err: any) {

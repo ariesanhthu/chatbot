@@ -35,10 +35,9 @@ export default function ChatPage() {
                 Start a conversation by sending a message...
               </div>
             ) : (
-              messages.map((msg: MessageProps, idx: number) => (
-                <BlockMessages key={idx} role={msg.role} content={msg.content} />
-              ))
-            )}
+              <BlockMessages messages={messages} isLoading = {isLoading} />
+            )
+            }
           </div>
         </ScrollArea>
 

@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import { Chat } from "@/app/components/Chat";
-import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { BlockMessages } from "@/app/components/Block-messages";
-import { MessageProps, MessageRole, MessageType } from "@/lib/interface";
 
 import { useAuth } from "@/context/AuthContext";
-import { BotId } from "@/lib/ExternalData";
 import { useParams } from "next/navigation";
 import { useChatService } from "@/app/hooks/useChatService";
 
@@ -39,11 +36,10 @@ export default function ChatPage(){
               <div className="text-center text-muted-foreground py-8">
                 Start a conversation by sending a message...
               </div>
-            ) : (
-              messages.map((msg: MessageProps, idx: number) => (
-                <BlockMessages key={idx} role={msg.role} content={msg.content} />
-              ))
-            )}
+            ) :
+              <BlockMessages messages={messages} isLoading={isLoading} />
+              
+            }
           </div>
         </ScrollArea>
 
